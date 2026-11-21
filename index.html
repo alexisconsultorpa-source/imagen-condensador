@@ -547,59 +547,6 @@
       return false;
     }
 
-    function isChecklistText(txt) {
-      const t = norm(txt);
-      if (!t) return true;
-      if (txt.includes("?")) return true;
-      const checklistStarts = [
-        "se ve limpia",
-        "se encuentra libre",
-        "se encuentran libres",
-        "se encuentra en buen",
-        "se encuentran en buen",
-        "no puede haber",
-        "puede que haya",
-        "tiene disponible",
-        "cuenta con un",
-        "los elementos de",
-        "la fachada de",
-        "la entrada y",
-        "la rodadura de",
-        "la rodadura y",
-        "la pista debajo",
-        "los dispositivos de",
-        "los qrs de",
-        "las isletas,",
-        "los exhibidores de",
-        "los basureros y",
-        "las mangueras de",
-        "los extinguidores se",
-        "la caseta de",
-        "los letreros se",
-        "el espacio dedicado",
-        "los jardines en",
-        "los estacionamientos de",
-        "las aceras y",
-        "el rotulo",
-        "el bano se",
-        "la musica en",
-        "la tienda se",
-        "el uniforme del",
-        "el personal de",
-        "los elementos del",
-        "la terraza y",
-        "sin partes faltantes",
-        "no descolorido",
-        "no despintado",
-        "descamado",
-        "libres de oxido",
-        "letrero secundario de precios"
-      ];
-      if (checklistStarts.some(p => t.startsWith(p))) return true;
-      if (t.length > 60) return true;
-      return false;
-    }
-
     async function readPdf(buffer) {
       const doc = await pdfjsLib.getDocument({ data: buffer }).promise;
       const pages = [];
@@ -740,7 +687,7 @@
           if (!area) continue;
 
           const nextAreaMarker = areaMarkers.find(m => m.y > cur.y + 2 && m.y < nextObsY);
-          const limitY = nextAreaMarker ? nextAreaMarker.y - 1 : Math.min(nextObsY, cur.y + 24);
+          const limitY = nextAreaMarker ? nextAreaMarker.y - 1 : nextObsY;
 
           const obsBand = pg.items.filter(it => it.y > cur.y + 1.5 && it.y <= limitY);
           const bandRows = toLines(obsBand);
@@ -754,14 +701,13 @@
               .filter(it => !isIgnoredToken(it.str))
               .map(it => it.str);
             const joined = clean(filtered.join(" "));
-            if (!joined || isChecklistText(joined)) continue;
+            if (!joined || joined.includes("?")) continue;
 
-            if (br.items.every(it => it.x < 100) && joined.length <= 28 && !/\s/.test(joined)) continue;
             extracted.push(joined);
           }
 
           const note = clean(extracted.join(" "));
-          if (note.length > 0 && !isChecklistText(note)) {
+          if (note.length > 0) {
             const exists = observations.some(
               o => norm(o.area) === norm(area) && norm(o.part) === norm(cur.part) && norm(o.note) === norm(note)
             );
