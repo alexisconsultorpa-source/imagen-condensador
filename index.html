@@ -17,7 +17,6 @@
       --warn: #b45309;
       --warn-bg: #fffbeb;
       --ok: #15803d;
-      --ok-bg: #f0fdf4;
     }
 
     * {
@@ -293,19 +292,8 @@
       border: 1px solid #fde68a;
     }
 
-    .badge-ok {
-      background: var(--ok-bg);
-      color: var(--ok);
-      border: 1px solid #bbf7d0;
-    }
-
-    .badge-na {
-      background: #f1f5f9;
-      color: var(--muted);
-      border: 1px solid #e2e8f0;
-    }
-
     .finding-line {
+      min-height: 16px;
       margin-bottom: 3px;
     }
 
@@ -434,7 +422,7 @@
       <div class="report-top">
         <div>
           <div class="report-title">Informe Ejecutivo de Auditoría de Imagen</div>
-          <div class="report-sub">Área, puntaje, % alcanzado, parte evaluada y observaciones con penalización</div>
+          <div class="report-sub">Área, puntaje, % alcanzado, parte evaluada y observación literal</div>
         </div>
         <div class="report-sub" id="docCode">Sin archivo cargado</div>
       </div>
@@ -483,8 +471,8 @@
             <th style="width: 18%">Área</th>
             <th class="num" style="width: 8%">Puntaje</th>
             <th class="num" style="width: 9%">% Alcanzado</th>
-            <th style="width: 21%">Parte Evaluada</th>
-            <th style="width: 44%">Observación</th>
+            <th style="width: 22%">Parte Evaluada</th>
+            <th style="width: 43%">Observación</th>
           </tr>
         </thead>
         <tbody id="tableBody">
@@ -542,20 +530,13 @@
       return (str || "").replace(/\s+/g, " ").trim();
     }
 
-    function isQuestionOrBoilerplate(text) {
+    function isIgnoredSnippet(text) {
       const t = cleanText(text);
       if (!t) return true;
-      // Preguntas típicas del formato (terminan en '?' o empiezan con artículos/frases del checklist)
-      if (t.endsWith("?")) return true;
-      if (/^(el |la |los |las |un |una |no puede haber|puede que haya|sin partes faltantes|no descolorido)/i.test(t)) {
-        return true;
-      }
-      if (/^(limpieza|funcionamiento|estado|puntaje|%|total|observaciones\s*[-–])/i.test(t)) {
-        return true;
-      }
-      if (/^\d+\s*\/\s*\d+$/.test(t) || /^\d{1,3}\.\d{2}$/.test(t) || /^(sí|si|no|no aplica)$/i.test(t)) {
-        return true;
-      }
+      if (t.includes("?")) return true;
+      if (/^observaciones\s*[-–]/i.test(t)) return true;
+      if (/^(sí|si|no|no aplica|limpieza|funcionamiento|estado|puntaje|%|total)$/i.test(t)) return true;
+      if (/^\d+\s*\/\s*\d+$/.test(t) || /^\d{1,3}\.\d{2}$/.test(t) || /^\d{1,2}$/.test(t)) return true;
       return false;
     }
 
@@ -682,7 +663,6 @@
         if (page.pageNum === 1) continue;
         const lines = groupIntoLines(page.items);
 
-        // Detectar encabezados de área presentes en la página con su coordenada Y
         const areaHeaders = [];
         for (const l of lines) {
           const nl = normalize(l.text);
@@ -692,7 +672,6 @@
           }
         }
 
-        // Localizar todas las líneas "Observaciones - ..."
         const obsAnchors = [];
         for (let idx = 0; idx < lines.length; idx++) {
           const l = lines[idx];
@@ -701,6 +680,7 @@
             obsAnchors.push({
               partName: cleanText(m[1]),
               y: l.y,
+              x: l.items[0]?.x || 0,
               lineIdx: idx
             });
           }
@@ -708,9 +688,8 @@
 
         for (let idx = 0; idx < obsAnchors.length; idx++) {
           const anchor = obsAnchors[idx];
-          const nextAnchorY = obsAnchors[idx + 1] ? obsAnchors[idx + 1].y : page.height - 20;
+          const nextAnchorY = obsAnchors[idx + 1] ? Math.min(obsAnchors[idx + 1].y - 1, anchor.y + 22) : anchor.y + 22;
 
-          // Determinar el área más cercana por encima del ancla
           let areaForAnchor = null;
           for (let h = areaHeaders.length - 1; h >= 0; h--) {
             if (areaHeaders[h].y <= anchor.y + 4) {
@@ -718,52 +697,41 @@
               break;
             }
           }
-          if (!areaForAnchor) {
-            areaForAnchor = areaHeaders[0]?.key || null;
-          }
+          if (!areaForAnchor) areaForAnchor = areaHeaders[0]?.key || null;
           if (!areaForAnchor) continue;
 
-          // Buscar si en este bloque de parte evaluada hubo respuesta "No"
+          // Detectar si hubo "No" en esta parte evaluada (entre la observación anterior y esta)
           const prevAnchorY = idx > 0 ? obsAnchors[idx - 1].y : Math.max(30, anchor.y - 65);
           const bandItems = page.items.filter(
             it => it.y > prevAnchorY + 2 && it.y < anchor.y - 1
           );
           const hasNo = bandItems.some(it => /^(no)$/i.test(it.str.trim()));
 
-          // Extraer únicamente el texto escrito en la franja de observación (debajo de "Observaciones - ...")
-          const belowItems = page.items.filter(
-            it => it.y > anchor.y + 1.5 && it.y < nextAnchorY - 2
+          // Extraer estrictamente el texto escrito en la celda de observación (debajo de "Observaciones - ...")
+          const obsCellItems = page.items.filter(
+            it => it.y > anchor.y + 1.5 && it.y <= nextAnchorY && it.x >= anchor.x - 10
           );
-          const belowLines = groupIntoLines(belowItems);
+          const obsCellLines = groupIntoLines(obsCellItems);
 
-          const rawObsParts = [];
-          for (const bl of belowLines) {
-            // Si aparece otro encabezado de área, detener
-            if (AREAS.some(a => normalize(a.key) === normalize(bl.text))) break;
-
-            // Tomar elementos que no sean la etiqueta "Observaciones - ..." ni preguntas del formato
-            const filteredItems = bl.items.filter(i => !/^(no)$/i.test(i.str.trim()));
-            const lineStr = cleanText(filteredItems.map(i => i.str).join(" "));
-            if (!lineStr || isQuestionOrBoilerplate(lineStr)) continue;
-
-            // Evitar capturar nombres de la siguiente "Parte Evaluada" si están en columna izquierda corta
-            const isShortLeftPartName =
-              filteredItems.every(i => i.x < 120) &&
-              lineStr.length <= 36 &&
-              !lineStr.includes(" ");
-            if (isShortLeftPartName) continue;
-
-            rawObsParts.push(lineStr);
+          const literalParts = [];
+          for (const cl of obsCellLines) {
+            if (AREAS.some(a => normalize(a.key) === normalize(cl.text))) break;
+            const validTokens = cl.items
+              .filter(it => !isIgnoredSnippet(it.str))
+              .map(it => it.str);
+            const joined = cleanText(validTokens.join(" "));
+            if (joined && !isIgnoredSnippet(joined) && joined.length <= 90) {
+              literalParts.push(joined);
+            }
           }
 
-          const writtenObservation = cleanText(rawObsParts.join(" "));
+          const literalObservation = cleanText(literalParts.join(" "));
 
-          // Solo incluir si hay penalización ("No") o si el auditor escribió una observación real
-          if (hasNo || writtenObservation.length > 0) {
+          if (hasNo || literalObservation.length > 0) {
             findingsByArea[areaForAnchor].push({
               part: anchor.partName,
               isPenalty: hasNo,
-              observation: writtenObservation // Si no hay texto escrito, queda en blanco ""
+              observation: literalObservation // Estricto: solo lo escrito en observación, o "" si está vacía
             });
           }
         }
@@ -866,7 +834,6 @@
           .join("");
 
         const tdObs = document.createElement("td");
-        // Escribe exactamente lo que dice la observación; si no hay observación, queda en blanco
         tdObs.innerHTML = list
           .map(f => `<div class="finding-line">${f.observation ? escapeHtml(f.observation) : ""}</div>`)
           .join("");
@@ -879,7 +846,7 @@
         tableBody.appendChild(tr);
 
         const waItems = list
-          .map(f => `${f.part}${f.observation ? ": " + f.observation : ""}`)
+          .map(f => `${f.part}${f.observation ? " (" + f.observation + ")" : ""}`)
           .join(" | ");
         plainLines.push(`• *${a.label}* (${scoreDisplay} | ${pctDisplay}): ${waItems}`);
       }
