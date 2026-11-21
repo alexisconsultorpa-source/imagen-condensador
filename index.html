@@ -12,7 +12,6 @@
       --ink: #0f172a;
       --muted: #64748b;
       --line: #cbd5e1;
-      --accent: #0f172a;
       --danger: #b91c1c;
       --danger-bg: #fef2f2;
       --warn: #b45309;
@@ -278,7 +277,7 @@
       border-radius: 4px;
       font-size: 9.5px;
       font-weight: 700;
-      margin-right: 4px;
+      margin-right: 5px;
       text-transform: uppercase;
     }
 
@@ -307,7 +306,7 @@
     }
 
     .finding-line {
-      margin-bottom: 2px;
+      margin-bottom: 3px;
     }
 
     .finding-line:last-child {
@@ -435,7 +434,7 @@
       <div class="report-top">
         <div>
           <div class="report-title">Informe Ejecutivo de Auditoría de Imagen</div>
-          <div class="report-sub">Resumen condensado por área · Hallazgos, penalizaciones y observaciones preventivas</div>
+          <div class="report-sub">Área, puntaje, % alcanzado, parte evaluada y observaciones con penalización</div>
         </div>
         <div class="report-sub" id="docCode">Sin archivo cargado</div>
       </div>
@@ -473,7 +472,7 @@
           <div class="k-val" id="kpiPen">—</div>
         </div>
         <div class="kpi warn">
-          <div class="k-lbl">Observaciones / Notas</div>
+          <div class="k-lbl">Observaciones Escritas</div>
           <div class="k-val" id="kpiNotes">—</div>
         </div>
       </div>
@@ -481,11 +480,11 @@
       <table>
         <thead>
           <tr>
-            <th style="width: 19%">Área Evaluada</th>
+            <th style="width: 18%">Área</th>
             <th class="num" style="width: 8%">Puntaje</th>
-            <th class="num" style="width: 9%">% Logrado</th>
-            <th style="width: 22%">Parte Evaluada</th>
-            <th style="width: 42%">Observación / Penalización</th>
+            <th class="num" style="width: 9%">% Alcanzado</th>
+            <th style="width: 21%">Parte Evaluada</th>
+            <th style="width: 44%">Observación</th>
           </tr>
         </thead>
         <tbody id="tableBody">
@@ -543,6 +542,23 @@
       return (str || "").replace(/\s+/g, " ").trim();
     }
 
+    function isQuestionOrBoilerplate(text) {
+      const t = cleanText(text);
+      if (!t) return true;
+      // Preguntas típicas del formato (terminan en '?' o empiezan con artículos/frases del checklist)
+      if (t.endsWith("?")) return true;
+      if (/^(el |la |los |las |un |una |no puede haber|puede que haya|sin partes faltantes|no descolorido)/i.test(t)) {
+        return true;
+      }
+      if (/^(limpieza|funcionamiento|estado|puntaje|%|total|observaciones\s*[-–])/i.test(t)) {
+        return true;
+      }
+      if (/^\d+\s*\/\s*\d+$/.test(t) || /^\d{1,3}\.\d{2}$/.test(t) || /^(sí|si|no|no aplica)$/i.test(t)) {
+        return true;
+      }
+      return false;
+    }
+
     async function extractPages(arrayBuffer) {
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       const pages = [];
@@ -552,16 +568,12 @@
         const content = await page.getTextContent();
         const items = content.items
           .filter(it => it.str && it.str.trim() !== "")
-          .map(it => {
-            const tx = it.transform[4];
-            const ty = viewport.height - it.transform[5]; // top-down Y
-            return {
-              str: it.str.trim(),
-              x: tx,
-              y: ty,
-              w: it.width || 0
-            };
-          });
+          .map(it => ({
+            str: it.str.trim(),
+            x: it.transform[4],
+            y: viewport.height - it.transform[5],
+            w: it.width || 0
+          }));
         pages.push({ pageNum: p, height: viewport.height, width: viewport.width, items });
       }
       return pages;
@@ -586,10 +598,8 @@
     }
 
     function parseAuditPDF(pages) {
-      const allItems = pages.flatMap(p => p.items.map(i => ({ ...i, page: p.pageNum })));
       const p1Lines = groupIntoLines(pages[0]?.items || []);
 
-      // Header metadata
       let station = "—";
       let period = "—";
       let client = "—";
@@ -603,7 +613,6 @@
       const visitaMatch = fullP1Text.match(/visita al sitio para\s+([A-Za-zÁÉÍÓÚáéíóúñÑ0-9\s\-]+?)\./i);
       if (visitaMatch) station = visitaMatch[1].trim();
 
-      // Find Station name on page 1 if not found
       if (station === "—") {
         for (let i = 0; i < p1Lines.length; i++) {
           if (normalize(p1Lines[i].text) === "estacion" && p1Lines[i + 1]) {
@@ -613,7 +622,6 @@
         }
       }
 
-      // Client name typically near end of document ("Nombre Cliente:")
       for (const page of pages) {
         const lines = groupIntoLines(page.items);
         for (let i = 0; i < lines.length; i++) {
@@ -630,7 +638,6 @@
         }
       }
 
-      // Summary scores per area from Page 1
       const areaSummary = {};
       for (const a of AREAS) {
         areaSummary[a.key] = { earned: 0, total: 0, pct: 0, hasScore: false };
@@ -641,9 +648,8 @@
         if (/Total\s+Auditoria/i.test(line.text)) {
           const combined = [line.text, p1Lines[i + 1]?.text || "", p1Lines[i + 2]?.text || ""].join(" ");
           const frac = combined.match(/(\d+)\s*\/\s*(\d+)/);
-          const pct = combined.match(/(\d{1,3}(?:\.\d{1,2})?)\s*%?/);
-          if (frac) totalScoreStr = `${frac[1]}/${frac[2]}`;
           const pctMatch = combined.match(/\b(\d{1,3}\.\d{2})\b/);
+          if (frac) totalScoreStr = `${frac[1]}/${frac[2]}`;
           if (pctMatch) totalPctStr = `${pctMatch[1]}%`;
           continue;
         }
@@ -669,16 +675,24 @@
         }
       }
 
-      // Parse detailed sections across pages 2+
       const findingsByArea = {};
       for (const a of AREAS) findingsByArea[a.key] = [];
 
-      // Identify section headers and "Observaciones - ..." anchors across all pages
       for (const page of pages) {
         if (page.pageNum === 1) continue;
         const lines = groupIntoLines(page.items);
 
-        // Locate all "Observaciones - ..." lines on this page
+        // Detectar encabezados de área presentes en la página con su coordenada Y
+        const areaHeaders = [];
+        for (const l of lines) {
+          const nl = normalize(l.text);
+          const matched = AREAS.find(a => nl === normalize(a.key));
+          if (matched) {
+            areaHeaders.push({ key: matched.key, y: l.y });
+          }
+        }
+
+        // Localizar todas las líneas "Observaciones - ..."
         const obsAnchors = [];
         for (let idx = 0; idx < lines.length; idx++) {
           const l = lines[idx];
@@ -687,84 +701,69 @@
             obsAnchors.push({
               partName: cleanText(m[1]),
               y: l.y,
-              x: l.items[0]?.x || 0,
               lineIdx: idx
             });
           }
         }
 
-        // Determine current area context on this page
-        let currentArea = null;
-        for (const l of lines) {
-          const nl = normalize(l.text);
-          for (const a of AREAS) {
-            if (nl === normalize(a.key)) {
-              currentArea = a.key;
-            }
-          }
-        }
-
         for (let idx = 0; idx < obsAnchors.length; idx++) {
           const anchor = obsAnchors[idx];
-          const nextAnchorY = obsAnchors[idx + 1] ? obsAnchors[idx + 1].y : page.height - 25;
+          const nextAnchorY = obsAnchors[idx + 1] ? obsAnchors[idx + 1].y : page.height - 20;
 
-          // Determine which area this observation belongs to by nearest area header above anchor.y
-          let areaForAnchor = currentArea;
-          for (let j = anchor.lineIdx - 1; j >= 0; j--) {
-            const nl = normalize(lines[j].text);
-            const matchedArea = AREAS.find(a => nl === normalize(a.key));
-            if (matchedArea) {
-              areaForAnchor = matchedArea.key;
+          // Determinar el área más cercana por encima del ancla
+          let areaForAnchor = null;
+          for (let h = areaHeaders.length - 1; h >= 0; h--) {
+            if (areaHeaders[h].y <= anchor.y + 4) {
+              areaForAnchor = areaHeaders[h].key;
               break;
             }
           }
+          if (!areaForAnchor) {
+            areaForAnchor = areaHeaders[0]?.key || null;
+          }
           if (!areaForAnchor) continue;
 
-          // Collect text strictly below anchor.y and above nextAnchorY
-          const belowItems = page.items.filter(
-            it => it.y > anchor.y + 2 && it.y < nextAnchorY - 2
-          );
-          const belowLines = groupIntoLines(belowItems);
-
-          // Filter out table headers, score summaries, or next section headers
-          const obsTexts = [];
-          for (const bl of belowLines) {
-            const t = bl.text;
-            if (!t) continue;
-            if (/^(Puntaje|%|Total|Limpieza|Funcionamiento|Estado)$/i.test(t)) continue;
-            if (/^\d+\s*\/\s*\d+$/.test(t)) continue;
-            if (/^\d{1,3}\.\d{2}$/.test(t)) continue;
-            if (AREAS.some(a => normalize(a.key) === normalize(t))) continue;
-            // Avoid capturing the next row's "Parte Evaluada" if it sits on the far left column (<110px) and is short
-            const leftOnly = bl.items.filter(i => i.x < 115).map(i => i.str).join(" ");
-            const rightSide = bl.items.filter(i => i.x >= 115).map(i => i.str).join(" ").trim();
-            if (rightSide) {
-              obsTexts.push(rightSide);
-            } else if (leftOnly && !/^(Sí|Si|No|No Aplica)$/i.test(leftOnly) && leftOnly.length > 18) {
-              obsTexts.push(leftOnly);
-            }
-          }
-
-          // Also check if there is a "No" answer near this part's band (from previous anchor or 45px above)
-          const prevAnchorY = idx > 0 ? obsAnchors[idx - 1].y : Math.max(40, anchor.y - 55);
+          // Buscar si en este bloque de parte evaluada hubo respuesta "No"
+          const prevAnchorY = idx > 0 ? obsAnchors[idx - 1].y : Math.max(30, anchor.y - 65);
           const bandItems = page.items.filter(
             it => it.y > prevAnchorY + 2 && it.y < anchor.y - 1
           );
           const hasNo = bandItems.some(it => /^(no)$/i.test(it.str.trim()));
 
-          const combinedObs = cleanText(obsTexts.join(" "));
-          const isRealObs =
-            combinedObs.length > 0 &&
-            !/^no\s*aplica$/i.test(combinedObs) &&
-            !/^sin\s*novedades?$/i.test(combinedObs);
+          // Extraer únicamente el texto escrito en la franja de observación (debajo de "Observaciones - ...")
+          const belowItems = page.items.filter(
+            it => it.y > anchor.y + 1.5 && it.y < nextAnchorY - 2
+          );
+          const belowLines = groupIntoLines(belowItems);
 
-          if (hasNo || isRealObs) {
+          const rawObsParts = [];
+          for (const bl of belowLines) {
+            // Si aparece otro encabezado de área, detener
+            if (AREAS.some(a => normalize(a.key) === normalize(bl.text))) break;
+
+            // Tomar elementos que no sean la etiqueta "Observaciones - ..." ni preguntas del formato
+            const filteredItems = bl.items.filter(i => !/^(no)$/i.test(i.str.trim()));
+            const lineStr = cleanText(filteredItems.map(i => i.str).join(" "));
+            if (!lineStr || isQuestionOrBoilerplate(lineStr)) continue;
+
+            // Evitar capturar nombres de la siguiente "Parte Evaluada" si están en columna izquierda corta
+            const isShortLeftPartName =
+              filteredItems.every(i => i.x < 120) &&
+              lineStr.length <= 36 &&
+              !lineStr.includes(" ");
+            if (isShortLeftPartName) continue;
+
+            rawObsParts.push(lineStr);
+          }
+
+          const writtenObservation = cleanText(rawObsParts.join(" "));
+
+          // Solo incluir si hay penalización ("No") o si el auditor escribió una observación real
+          if (hasNo || writtenObservation.length > 0) {
             findingsByArea[areaForAnchor].push({
               part: anchor.partName,
               isPenalty: hasNo,
-              note: isRealObs
-                ? combinedObs
-                : "Ítem marcado como 'No' en la evaluación."
+              observation: writtenObservation // Si no hay texto escrito, queda en blanco ""
             });
           }
         }
@@ -810,7 +809,7 @@
         const list = data.findingsByArea[a.key] || [];
         for (const f of list) {
           if (f.isPenalty) penaltiesCount++;
-          else notesCount++;
+          if (f.observation && f.observation.length > 0) notesCount++;
         }
       }
 
@@ -823,13 +822,18 @@
       const plainLines = [
         `*AUDITORÍA DE IMAGEN — ${data.station.toUpperCase()}*`,
         `Período: ${data.period} | Puntaje: ${document.getElementById("metaScore").textContent} (${finalPct})`,
-        `Penalizaciones: ${penaltiesCount} | Observaciones: ${notesCount}`,
+        `Penalizaciones: ${penaltiesCount} | Observaciones escritas: ${notesCount}`,
         ""
       ];
+
+      let anyRowRendered = false;
 
       for (const a of AREAS) {
         const s = data.areaSummary[a.key];
         const list = data.findingsByArea[a.key] || [];
+        if (list.length === 0) continue;
+
+        anyRowRendered = true;
         const isNA = s.total === 0;
         const scoreDisplay = isNA ? "0/0" : `${s.earned}/${s.total}`;
         const pctDisplay = isNA ? "N/A" : `${s.pct.toFixed(2)}%`;
@@ -852,35 +856,20 @@
         tdPct.textContent = pctDisplay;
 
         const tdPart = document.createElement("td");
+        tdPart.innerHTML = list
+          .map(f => {
+            const tag = f.isPenalty
+              ? `<span class="badge badge-pen">No</span>`
+              : `<span class="badge badge-nota">Obs</span>`;
+            return `<div class="finding-line">${tag}<strong>${escapeHtml(f.part)}</strong></div>`;
+          })
+          .join("");
+
         const tdObs = document.createElement("td");
-
-        if (isNA) {
-          tdPart.innerHTML = `<span class="badge badge-na">No aplica</span>`;
-          tdObs.textContent = "Sin evaluación en esta estación.";
-          plainLines.push(`• *${a.label}* (${scoreDisplay} | ${pctDisplay}): No aplica.`);
-        } else if (list.length === 0) {
-          tdPart.innerHTML = `<span class="badge badge-ok">Conforme</span>`;
-          tdObs.textContent = "Sin novedades ni penalizaciones.";
-          plainLines.push(`• *${a.label}* (${scoreDisplay} | ${pctDisplay}): Sin novedades.`);
-        } else {
-          tdPart.innerHTML = list
-            .map(f => `<div class="finding-line"><strong>${escapeHtml(f.part)}</strong></div>`)
-            .join("");
-
-          tdObs.innerHTML = list
-            .map(f => {
-              const badge = f.isPenalty
-                ? `<span class="badge badge-pen">Penalización</span>`
-                : `<span class="badge badge-nota">Observación</span>`;
-              return `<div class="finding-line">${badge} ${escapeHtml(f.note)}</div>`;
-            })
-            .join("");
-
-          const detailStr = list
-            .map(f => `[${f.isPenalty ? "PENALIZACIÓN" : "OBS"} - ${f.part}] ${f.note}`)
-            .join(" / ");
-          plainLines.push(`• *${a.label}* (${scoreDisplay} | ${pctDisplay}): ${detailStr}`);
-        }
+        // Escribe exactamente lo que dice la observación; si no hay observación, queda en blanco
+        tdObs.innerHTML = list
+          .map(f => `<div class="finding-line">${f.observation ? escapeHtml(f.observation) : ""}</div>`)
+          .join("");
 
         tr.appendChild(tdArea);
         tr.appendChild(tdScore);
@@ -888,6 +877,18 @@
         tr.appendChild(tdPart);
         tr.appendChild(tdObs);
         tableBody.appendChild(tr);
+
+        const waItems = list
+          .map(f => `${f.part}${f.observation ? ": " + f.observation : ""}`)
+          .join(" | ");
+        plainLines.push(`• *${a.label}* (${scoreDisplay} | ${pctDisplay}): ${waItems}`);
+      }
+
+      if (!anyRowRendered) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="5" style="text-align:center; padding:12px;">Sin penalizaciones ni observaciones escritas.</td>`;
+        tableBody.appendChild(tr);
+        plainLines.push("Sin penalizaciones ni observaciones escritas.");
       }
 
       lastPlainText = plainLines.join("\n");
