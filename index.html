@@ -1,1085 +1,960 @@
-html
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lector de Auditoría de Imagen · Puma Energy</title>
-  <!-- Tailwind CSS desde CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- PDF.js desde CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <!-- Fuente Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  
   <style>
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: #f1f5f9;
-      color: #0f172a;
+    :root {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #cbd5e1;
+      --accent: #0f172a;
+      --danger: #b91c1c;
+      --danger-bg: #fef2f2;
+      --warn: #b45309;
+      --warn-bg: #fffbeb;
+      --ok: #15803d;
+      --ok-bg: #f0fdf4;
     }
 
-    /* Estilos de hoja tamaño Carta para vista previa e impresión */
-    .report-sheet {
-      width: 100%;
-      max-width: 816px; /* ~8.5in a 96dpi */
-      min-height: 1056px; /* ~11in a 96dpi */
-      background: #ffffff;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-      margin: 0 auto;
-      position: relative;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.35;
+      font-size: 13px;
+    }
+
+    .toolbar {
+      max-width: 1020px;
+      margin: 18px auto 12px;
+      padding: 0 14px;
       display: flex;
-      flex-direction: column;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
       justify-content: space-between;
     }
 
-    /* Resaltado sutil cuando el modo edición está activo */
-    .editing-active [contenteditable="true"] {
-      outline: 1.5px dashed #3b82f6;
-      background-color: #eff6ff;
-      border-radius: 3px;
-      padding: 1px 4px;
-      transition: all 0.15s ease;
-    }
-    .editing-active [contenteditable="true"]:focus {
-      outline: 2px solid #2563eb;
-      background-color: #ffffff;
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
-    /* Configuración exacta de impresión en 1 sola página tamaño Carta */
-    @page {
-      size: letter portrait;
-      margin: 0.4in;
+    .brand-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #e11d48;
+      box-shadow: 0 0 0 3px #ffe4e6;
+    }
+
+    .brand h1 {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button, .upload-btn {
+      appearance: none;
+      border: 1px solid var(--ink);
+      background: var(--ink);
+      color: #fff;
+      padding: 7px 13px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: opacity 0.15s ease, transform 0.1s ease;
+    }
+
+    button:hover:not(:disabled), .upload-btn:hover {
+      opacity: 0.9;
+    }
+
+    button:active:not(:disabled) {
+      transform: scale(0.99);
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background: #fff;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+
+    .dropzone {
+      max-width: 1020px;
+      margin: 0 auto 14px;
+      padding: 0 14px;
+    }
+
+    .drop-area {
+      border: 1.5px dashed #94a3b8;
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 14px 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12.5px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .drop-area.dragover {
+      border-color: var(--ink);
+      background: #eef2ff;
+      color: var(--ink);
+    }
+
+    .status-msg {
+      max-width: 1020px;
+      margin: 0 auto 10px;
+      padding: 0 14px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .sheet-wrap {
+      max-width: 1020px;
+      margin: 0 auto 30px;
+      padding: 0 14px;
+    }
+
+    .sheet {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px 22px;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
+    }
+
+    .report-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+      gap: 12px;
+    }
+
+    .report-title {
+      font-size: 16px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .report-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      font-size: 11.5px;
+    }
+
+    .meta-item .lbl {
+      font-size: 9.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .meta-item .val {
+      font-weight: 700;
+      color: var(--ink);
+      margin-top: 1px;
+    }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 11px;
+    }
+
+    .kpi {
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 7px 10px;
+      background: #fff;
+    }
+
+    .kpi .k-lbl {
+      font-size: 9.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .kpi .k-val {
+      font-size: 15px;
+      font-weight: 800;
+      margin-top: 1px;
+    }
+
+    .kpi.danger .k-val { color: var(--danger); }
+    .kpi.warn .k-val { color: var(--warn); }
+    .kpi.ok .k-val { color: var(--ok); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    thead th {
+      background: #0f172a;
+      color: #ffffff;
+      text-align: left;
+      padding: 6px 8px;
+      font-weight: 700;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      border: 1px solid #0f172a;
+    }
+
+    thead th.num, tbody td.num {
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    tbody td {
+      padding: 5px 8px;
+      border: 1px solid #cbd5e1;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+
+    .area-name {
+      font-weight: 700;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 9.5px;
+      font-weight: 700;
+      margin-right: 4px;
+      text-transform: uppercase;
+    }
+
+    .badge-pen {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid #fecaca;
+    }
+
+    .badge-nota {
+      background: var(--warn-bg);
+      color: var(--warn);
+      border: 1px solid #fde68a;
+    }
+
+    .badge-ok {
+      background: var(--ok-bg);
+      color: var(--ok);
+      border: 1px solid #bbf7d0;
+    }
+
+    .badge-na {
+      background: #f1f5f9;
+      color: var(--muted);
+      border: 1px solid #e2e8f0;
+    }
+
+    .finding-line {
+      margin-bottom: 2px;
+    }
+
+    .finding-line:last-child {
+      margin-bottom: 0;
+    }
+
+    .footer-note {
+      margin-top: 9px;
+      padding-top: 6px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--muted);
     }
 
     @media print {
-      body {
-        background: #ffffff !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
+      @page {
+        size: letter portrait;
+        margin: 7mm;
       }
 
-      .no-print {
+      body {
+        background: #fff;
+        font-size: 10.5px;
+      }
+
+      .toolbar, .dropzone, .status-msg {
         display: none !important;
       }
 
-      .print-container {
-        padding: 0 !important;
-        margin: 0 !important;
-        width: 100% !important;
+      .sheet-wrap {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
       }
 
-      .report-sheet {
-        box-shadow: none !important;
-        border: none !important;
-        max-width: 100% !important;
-        width: 100% !important;
-        min-height: auto !important;
-        height: 100% !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        page-break-after: avoid;
-        break-after: avoid;
+      .sheet {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        border-radius: 0;
       }
 
-      /* Quitar bordes de edición al imprimir */
-      .editing-active [contenteditable="true"] {
-        outline: none !important;
-        background-color: transparent !important;
-        padding: 0 !important;
+      .report-top {
+        padding-bottom: 5px;
+        margin-bottom: 7px;
+      }
+
+      .report-title {
+        font-size: 13.5px;
+      }
+
+      .meta-grid, .kpi-row {
+        gap: 6px;
+        margin-bottom: 7px;
+      }
+
+      .meta-grid {
+        padding: 5px 8px;
+      }
+
+      .kpi {
+        padding: 5px 8px;
+      }
+
+      .kpi .k-val {
+        font-size: 13px;
+      }
+
+      thead th {
+        padding: 4px 6px;
+        font-size: 9px;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      tbody td {
+        padding: 3.5px 6px;
+        font-size: 9.5px;
+        line-height: 1.25;
+      }
+
+      .badge {
+        font-size: 8.5px;
+        padding: 0.5px 4px;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .footer-note {
+        margin-top: 6px;
+        padding-top: 4px;
+        font-size: 8.5px;
       }
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col">
-
-  <!-- BARRA DE NAVEGACIÓN SUPERIOR (Oculta al imprimir) -->
-  <header class="no-print bg-slate-900 text-white border-b-4 border-[#E30613] sticky top-0 z-30 shadow-md">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <!-- Emblema corporativo geométrico -->
-        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#E30613] to-[#b9050f] flex items-center justify-center font-extrabold text-white text-lg shadow">
-          P
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-[#00a84f]">Puma Energy</span>
-            <span class="text-slate-500 text-xs">•</span>
-            <span class="text-xs text-slate-300">Procesamiento Local 100% Seguro</span>
-          </div>
-          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Condensador de Auditorías de Imagen</h1>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <button id="btnLoadSampleTop" type="button" class="px-3 py-1.5 text-xs sm:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition cursor-pointer">
-          Probar Ejemplo (Penonomé)
-        </button>
-        <label for="fileInputTop" class="px-3.5 py-1.5 text-xs sm:text-sm font-semibold bg-[#00843D] hover:bg-[#006e33] text-white rounded-lg shadow transition cursor-pointer flex items-center gap-1.5">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-          <span>Subir PDF</span>
-        </label>
-        <input id="fileInputTop" type="file" accept="application/pdf" class="hidden">
-      </div>
+<body>
+  <div class="toolbar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <h1>Lector de Auditoría de Imagen · Informe Condensado</h1>
     </div>
-  </header>
-
-  <!-- NOTIFICACIÓN FLOTANTE (Toast) -->
-  <div id="toast" class="no-print fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
-    <div id="toastContent" class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 flex items-center gap-2.5 text-sm font-medium">
-      <span id="toastIcon">✅</span>
-      <span id="toastMessage">Mensaje</span>
+    <div class="actions">
+      <label class="upload-btn" for="pdfInput">
+        Subir PDF de Auditoría
+      </label>
+      <input type="file" id="pdfInput" accept="application/pdf" style="display:none" />
+      <button type="button" class="secondary" id="copyBtn" disabled>Copiar para WhatsApp</button>
+      <button type="button" id="printBtn" disabled>Guardar / Imprimir (1 Pág)</button>
     </div>
   </div>
 
-  <!-- ZONA PRINCIPAL -->
-  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+  <div class="dropzone">
+    <div class="drop-area" id="dropArea">
+      Arrastra aquí el PDF original de Auditoría de Imagen (9 páginas) o haz clic en <strong>Subir PDF de Auditoría</strong>.
+    </div>
+  </div>
 
-    <!-- PANTALLA DE CARGA INICIAL (Drag & Drop) -->
-    <section id="uploadSection" class="no-print max-w-2xl mx-auto my-6">
-      <div id="dropZone" class="bg-white border-2 border-dashed border-slate-300 hover:border-[#00843D] rounded-2xl p-8 sm:p-12 text-center transition-all cursor-pointer shadow-sm group">
-        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-emerald-50 text-[#00843D] group-hover:scale-105 transition-transform flex items-center justify-center">
-          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-          </svg>
+  <div class="status-msg" id="statusMsg">Esperando un archivo PDF...</div>
+
+  <div class="sheet-wrap">
+    <div class="sheet" id="reportSheet">
+      <div class="report-top">
+        <div>
+          <div class="report-title">Informe Ejecutivo de Auditoría de Imagen</div>
+          <div class="report-sub">Resumen condensado por área · Hallazgos, penalizaciones y observaciones preventivas</div>
         </div>
-        <h2 class="text-xl font-bold text-slate-900 mb-2">Arrastra aquí el PDF de Auditoría de Imagen</h2>
-        <p class="text-sm text-slate-500 max-w-md mx-auto mb-6">
-          Convierte automáticamente el reporte extenso de 9 páginas en un resumen ejecutivo de 1 hoja con puntajes, penalizaciones y observaciones clave.
-        </p>
-
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <label for="fileInputMain" class="w-full sm:w-auto px-5 py-2.5 bg-[#E30613] hover:bg-[#c20510] text-white font-semibold text-sm rounded-xl shadow-sm transition cursor-pointer inline-flex items-center justify-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-            Seleccionar archivo PDF
-          </label>
-          <input id="fileInputMain" type="file" accept="application/pdf" class="hidden">
-
-          <button id="btnLoadSampleMain" type="button" class="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-sm rounded-xl transition cursor-pointer">
-            Cargar Ejemplo (Penonomé Nov-Dic 2026)
-          </button>
-        </div>
-
-        <div class="mt-6 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
-          <span class="flex items-center gap-1">🔒 100% Privado (se procesa en tu navegador)</span>
-          <span class="flex items-center gap-1">⚡ Detecta respuestas "No" y notas ocultas</span>
-          <span class="flex items-center gap-1">📄 Exportable a PDF de 1 página</span>
-        </div>
+        <div class="report-sub" id="docCode">Sin archivo cargado</div>
       </div>
 
-      <!-- Indicador de carga -->
-      <div id="loadingIndicator" class="hidden mt-6 bg-white rounded-xl p-6 text-center shadow-sm border border-slate-200">
-        <div class="inline-block w-8 h-8 border-4 border-[#00843D] border-t-transparent rounded-full animate-spin mb-2"></div>
-        <p class="text-sm font-semibold text-slate-800">Analizando estructura y extrayendo observaciones del PDF...</p>
-        <p class="text-xs text-slate-500 mt-1">Ordenando bloques de texto por coordenadas en las 9 páginas</p>
-      </div>
-
-      <!-- Alerta de error -->
-      <div id="errorBox" class="hidden mt-6 bg-red-50 border border-red-200 text-red-800 rounded-xl p-4 text-sm">
-        <div class="font-bold flex items-center gap-2 mb-1">
-          <span>⚠️ No se pudo procesar el archivo</span>
+      <div class="meta-grid">
+        <div class="meta-item">
+          <div class="lbl">Estación</div>
+          <div class="val" id="metaStation">—</div>
         </div>
-        <p id="errorText" class="text-red-700"></p>
-      </div>
-    </section>
-
-    <!-- VISTA DEL INFORME GENERADO -->
-    <section id="reportWorkspace" class="hidden">
-
-      <!-- BARRA DE HERRAMIENTAS DE ACCIÓN (Oculta al imprimir) -->
-      <div class="no-print bg-white rounded-xl p-3.5 mb-5 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2">
-          <button id="btnReset" type="button" class="px-3 py-2 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition cursor-pointer flex items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            Cargar otro PDF
-          </button>
-          <span class="text-slate-300">|</span>
-          <button id="btnToggleEdit" type="button" class="px-3 py-2 text-xs sm:text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition cursor-pointer flex items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-            <span id="editBtnLabel">Editar texto manualmente</span>
-          </button>
+        <div class="meta-item">
+          <div class="lbl">Período</div>
+          <div class="val" id="metaPeriod">—</div>
         </div>
-
-        <div class="flex flex-wrap items-center gap-2">
-          <button id="btnCopyWhatsApp" type="button" class="px-3.5 py-2 text-xs sm:text-sm font-semibold bg-[#25D366] hover:bg-[#1ebe5d] text-white rounded-lg shadow-sm transition cursor-pointer flex items-center gap-1.5">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824z"/></svg>
-            <span>Copiar para WhatsApp</span>
-          </button>
-
-          <button id="btnPrintPDF" type="button" class="px-4 py-2 text-xs sm:text-sm font-semibold bg-[#E30613] hover:bg-[#c20510] text-white rounded-lg shadow-sm transition cursor-pointer flex items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-            <span>Descargar / Imprimir PDF (1 Página)</span>
-          </button>
+        <div class="meta-item">
+          <div class="lbl">Puntaje Global</div>
+          <div class="val" id="metaScore">—</div>
+        </div>
+        <div class="meta-item">
+          <div class="lbl">Encargado / Cliente</div>
+          <div class="val" id="metaClient">—</div>
         </div>
       </div>
 
-      <!-- AVISO DE MODO EDICIÓN -->
-      <div id="editBanner" class="no-print hidden bg-blue-50 border border-blue-200 text-blue-800 px-4 py-2.5 rounded-xl mb-4 text-xs sm:text-sm flex items-center justify-between">
-        <span>✏️ <strong>Modo Edición Activo:</strong> Haz clic sobre cualquier texto, porcentaje u observación dentro de la hoja para ajustarlo antes de imprimir o copiar.</span>
-        <button id="btnCloseEditBanner" type="button" class="text-blue-700 font-bold underline ml-3 cursor-pointer">Listo</button>
+      <div class="kpi-row">
+        <div class="kpi ok">
+          <div class="k-lbl">% Cumplimiento</div>
+          <div class="k-val" id="kpiPct">—</div>
+        </div>
+        <div class="kpi">
+          <div class="k-lbl">Áreas al 100%</div>
+          <div class="k-val" id="kpiFull">—</div>
+        </div>
+        <div class="kpi danger">
+          <div class="k-lbl">Penalizaciones ("No")</div>
+          <div class="k-val" id="kpiPen">—</div>
+        </div>
+        <div class="kpi warn">
+          <div class="k-lbl">Observaciones / Notas</div>
+          <div class="k-val" id="kpiNotes">—</div>
+        </div>
       </div>
 
-      <!-- HOJA EJECUTIVA DE 1 PÁGINA (Área imprimible) -->
-      <div class="print-container">
-        <article id="reportSheet" class="report-sheet rounded-xl p-6 sm:p-10 border border-slate-200">
-          
-          <div>
-            <!-- ENCABEZADO CORPORATIVO -->
-            <header class="border-b-4 border-[#E30613] pb-4 mb-5 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
-              <div>
-                <div class="flex items-center gap-2 mb-1">
-                  <span class="inline-block w-2.5 h-2.5 rounded-full bg-[#00843D]"></span>
-                  <span class="text-xs font-extrabold uppercase tracking-widest text-[#00843D]">Puma Energy · Control de Estándares de Sitio</span>
-                </div>
-                <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">INFORME EJECUTIVO DE AUDITORÍA DE IMAGEN</h2>
-              </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 19%">Área Evaluada</th>
+            <th class="num" style="width: 8%">Puntaje</th>
+            <th class="num" style="width: 9%">% Logrado</th>
+            <th style="width: 22%">Parte Evaluada</th>
+            <th style="width: 42%">Observación / Penalización</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr>
+            <td colspan="5" style="text-align:center; color:#64748b; padding:18px;">
+              Sube un PDF de auditoría para generar el informe condensado.
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-              <div class="text-left sm:text-right bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
-                <span class="block text-[10px] uppercase tracking-wider font-semibold text-slate-500">Referencia de Reporte</span>
-                <span id="repRef" class="text-xs sm:text-sm font-bold text-slate-800">RSS-0001269</span>
-              </div>
-            </header>
-
-            <!-- TARJETA DE METADATOS Y NOTA GLOBAL -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-              <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Estación</span>
-                <span id="repStation" class="text-sm sm:text-base font-extrabold text-slate-900 block">Penonomé</span>
-              </div>
-              <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Período Evaluado</span>
-                <span id="repPeriod" class="text-sm sm:text-base font-bold text-slate-900 block">Nov-Dic 2026</span>
-              </div>
-              <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Cliente / Encargado</span>
-                <span id="repClient" class="text-sm sm:text-base font-bold text-slate-900 block">Omar Quintanilla</span>
-              </div>
-              <div id="repScoreBox" class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-                <span class="block text-[10px] font-bold uppercase tracking-wider text-[#00843D] mb-0.5">Nota Final Alcanzada</span>
-                <div class="flex items-baseline gap-1.5">
-                  <span id="repTotalPct" class="text-lg sm:text-xl font-extrabold text-[#00843D]">96.81%</span>
-                  <span id="repTotalScore" class="text-xs font-semibold text-emerald-700">(91/94)</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- INDICADORES KPI RÁPIDOS -->
-            <div class="grid grid-cols-3 gap-3 mb-5">
-              <div class="border border-slate-200 rounded-lg px-3.5 py-2 flex items-center justify-between bg-white">
-                <div>
-                  <span class="block text-[10px] font-semibold uppercase text-slate-500">Áreas al 100%</span>
-                  <span id="kpiPerfectAreas" class="text-base font-extrabold text-[#00843D]">8 de 9</span>
-                </div>
-                <span class="w-7 h-7 rounded-full bg-emerald-50 text-[#00843D] flex items-center justify-center text-xs font-bold">✓</span>
-              </div>
-              <div class="border border-slate-200 rounded-lg px-3.5 py-2 flex items-center justify-between bg-white">
-                <div>
-                  <span class="block text-[10px] font-semibold uppercase text-slate-500">Penalizaciones ("No")</span>
-                  <span id="kpiPenalties" class="text-base font-extrabold text-[#E30613]">1</span>
-                </div>
-                <span class="w-7 h-7 rounded-full bg-red-50 text-[#E30613] flex items-center justify-center text-xs font-bold">!</span>
-              </div>
-              <div class="border border-slate-200 rounded-lg px-3.5 py-2 flex items-center justify-between bg-white">
-                <div>
-                  <span class="block text-[10px] font-semibold uppercase text-slate-500">Notas Preventivas</span>
-                  <span id="kpiWarnings" class="text-base font-extrabold text-amber-600">2</span>
-                </div>
-                <span class="w-7 h-7 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xs font-bold">⚑</span>
-              </div>
-            </div>
-
-            <!-- TÍTULO DE TABLA -->
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-slate-800 border-l-4 border-[#00843D] pl-2.5">
-                Desglose por Área y Hallazgos Detectados
-              </h3>
-              <span class="text-[11px] text-slate-500">Se muestran únicamente partes con observación o penalización</span>
-            </div>
-
-            <!-- TABLA CONDENSADA DE RESULTADOS -->
-            <div class="overflow-hidden border border-slate-300 rounded-lg mb-5">
-              <table class="w-full border-collapse text-left text-xs">
-                <thead>
-                  <tr class="bg-slate-900 text-white">
-                    <th class="py-2 px-2.5 font-semibold w-[22%]">Área Evaluada</th>
-                    <th class="py-2 px-2 font-semibold text-center w-[9%]">Puntaje</th>
-                    <th class="py-2 px-2.5 font-semibold text-center w-[15%]">% Alcanzado</th>
-                    <th class="py-2 px-2.5 font-semibold w-[22%]">Parte Evaluada</th>
-                    <th class="py-2 px-2.5 font-semibold w-[32%]">Observación / Penalización</th>
-                  </tr>
-                </thead>
-                <tbody id="auditTableBody" class="divide-y divide-slate-200">
-                  <!-- Filas generadas dinámicamente -->
-                </tbody>
-              </table>
-            </div>
-
-            <!-- PLAN DE ACCIÓN / SÍNTESIS EJECUTIVA -->
-            <div class="bg-slate-50 border-l-4 border-[#E30613] border-y border-r border-slate-200 rounded-r-lg p-3.5">
-              <div class="text-xs font-extrabold uppercase tracking-wider text-slate-900 mb-1">
-                Foco de Acción Recomendado para el Operador
-              </div>
-              <p id="repActionSummary" class="text-xs leading-relaxed text-slate-700">
-                <!-- Resumen dinámico -->
-              </p>
-            </div>
-          </div>
-
-          <!-- PIE DE PÁGINA DEL DOCUMENTO -->
-          <footer class="mt-6 pt-3 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-400">
-            <span id="repFooterLeft">Informe Ejecutivo Condensado · Auditoría de Imagen Puma Energy</span>
-            <span>Página 1 de 1</span>
-          </footer>
-
-        </article>
+      <div class="footer-note">
+        <span>Generado automáticamente desde reporte oficial de auditoría de imagen</span>
+        <span id="footerTimestamp"></span>
       </div>
-
-    </section>
-  </main>
+    </div>
+  </div>
 
   <script>
-    // Configuración del worker de PDF.js
-    if (window.pdfjsLib) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    }
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-    // Catálogo maestro de categorías estándar en orden oficial
-    const STANDARD_CATEGORIES = [
-      { key: 'acercamiento', label: 'Acercamiento Inicial', aliases: ['acercamiento inicial'] },
-      { key: 'mid', label: 'MID', aliases: ['mid'] },
-      { key: 'canopy', label: 'Canopy', aliases: ['canopy'] },
-      { key: 'pista', label: 'Pista', aliases: ['pista'] },
-      { key: 'surtidores', label: 'Área de Surtidores', aliases: ['area de surtidores', 'área de surtidores'] },
-      { key: 'letreros', label: 'Letreros y Alrededor Externo', aliases: ['letreros y alrededor externo', 'letreros y alrededores'] },
-      { key: 'banos', label: 'Baños', aliases: ['banos', 'baños'] },
-      { key: 'tienda', label: 'Tienda', aliases: ['tienda'] },
-      { key: 'uniformes', label: 'Uniformes', aliases: ['uniformes'] },
-      { key: 'otras', label: 'Otras Áreas Comunes', aliases: ['otras areas comunes', 'otras áreas comunes'] }
+    const AREAS = [
+      { key: "Acercamiento Inicial", label: "Acercamiento Inicial" },
+      { key: "MID", label: "MID" },
+      { key: "Canopy", label: "Canopy" },
+      { key: "Pista", label: "Pista" },
+      { key: "Área de Surtidores", label: "Área de Surtidores" },
+      { key: "Letreros y Alrededor Externo", label: "Letreros y Alrededor Externo" },
+      { key: "Baños", label: "Baños" },
+      { key: "Tienda", label: "Tienda" },
+      { key: "Uniformes", label: "Uniformes" },
+      { key: "Otras Áreas Comunes", label: "Otras Áreas Comunes" }
     ];
 
-    // Estado global del reporte actual
-    let currentReport = null;
-    let isEditMode = false;
+    const pdfInput = document.getElementById("pdfInput");
+    const dropArea = document.getElementById("dropArea");
+    const statusMsg = document.getElementById("statusMsg");
+    const copyBtn = document.getElementById("copyBtn");
+    const printBtn = document.getElementById("printBtn");
+    const tableBody = document.getElementById("tableBody");
 
-    // Referencias DOM
-    const uploadSection = document.getElementById('uploadSection');
-    const reportWorkspace = document.getElementById('reportWorkspace');
-    const loadingIndicator = document.getElementById('loadingIndicator');
-    const errorBox = document.getElementById('errorBox');
-    const errorText = document.getElementById('errorText');
-    const dropZone = document.getElementById('dropZone');
-    const reportSheet = document.getElementById('reportSheet');
+    let lastPlainText = "";
 
-    // Utilidades de normalización de texto
-    function normalizeStr(str) {
-      return (str || '')
+    function normalize(str) {
+      return (str || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/\s+/g, ' ')
+        .replace(/\s+/g, " ")
         .trim();
     }
 
-    function showToast(message, icon = '✅') {
-      const toast = document.getElementById('toast');
-      document.getElementById('toastMessage').textContent = message;
-      document.getElementById('toastIcon').textContent = icon;
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      setTimeout(() => {
-        toast.classList.add('translate-y-20', 'opacity-0');
-      }, 3200);
+    function cleanText(str) {
+      return (str || "").replace(/\s+/g, " ").trim();
     }
 
-    function showError(msg) {
-      loadingIndicator.classList.add('hidden');
-      errorText.textContent = msg;
-      errorBox.classList.remove('hidden');
+    async function extractPages(arrayBuffer) {
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pages = [];
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const viewport = page.getViewport({ scale: 1.0 });
+        const content = await page.getTextContent();
+        const items = content.items
+          .filter(it => it.str && it.str.trim() !== "")
+          .map(it => {
+            const tx = it.transform[4];
+            const ty = viewport.height - it.transform[5]; // top-down Y
+            return {
+              str: it.str.trim(),
+              x: tx,
+              y: ty,
+              w: it.width || 0
+            };
+          });
+        pages.push({ pageNum: p, height: viewport.height, width: viewport.width, items });
+      }
+      return pages;
     }
 
-    // Datos de ejemplo (Penonomé Nov-Dic 2026) para prueba instantánea
-    function getSampleData() {
-      return {
-        reference: 'RSS-0001269',
-        station: 'Penonomé',
-        period: 'Nov-Dic 2026',
-        client: 'Omar Quintanilla',
-        totalScore: '91/94',
-        totalPct: 96.81,
-        categories: [
-          {
-            label: 'Acercamiento Inicial',
-            score: '1/1',
-            pct: 100.00,
-            na: false,
-            findings: []
-          },
-          {
-            label: 'MID',
-            score: '2/2',
-            pct: 100.00,
-            na: false,
-            findings: []
-          },
-          {
-            label: 'Canopy',
-            score: '2/2',
-            pct: 100.00,
-            na: false,
-            findings: []
-          },
-          {
-            label: 'Pista',
-            score: '7/7',
-            pct: 100.00,
-            na: false,
-            findings: []
-          },
-          {
-            label: 'Área de Surtidores',
-            score: '20/20',
-            pct: 100.00,
-            na: false,
-            findings: [
-              {
-                part: 'Dispositivos de Despacho',
-                text: 'Calcomanías descamadas',
-                type: 'warning' // 100% pero tiene observación
-              }
-            ]
-          },
-          {
-            label: 'Letreros y Alrededor Externo',
-            score: '8/8',
-            pct: 100.00,
-            na: false,
-            findings: []
-          },
-          {
-            label: 'Baños',
-            score: '24/27',
-            pct: 88.89,
-            na: false,
-            findings: [
-              {
-                part: 'Control de Limpieza e Insumos',
-                text: 'Desactualizado (Control de limpieza: No)',
-                type: 'penalty' // Penalización directa
-              }
-            ]
-          },
-          {
-            label: 'Tienda',
-            score: '15/15',
-            pct: 100.00,
-            na: false,
-            findings: [
-              {
-                part: 'Infraestructura Interna',
-                text: 'Dos lámparas quemadas',
-                type: 'warning'
-              }
-            ]
-          },
-          {
-            label: 'Uniformes',
-            score: '12/12',
-            pct: 100.00,
-            na: false,
-            findings: []
-          },
-          {
-            label: 'Otras Áreas Comunes',
-            score: '0/0',
-            pct: 0.00,
-            na: true,
-            findings: []
-          }
-        ]
-      };
-    }
-
-    // Extracción de texto ordenada por coordenadas (Y descendente, X ascendente) usando PDF.js
-    async function extractOrderedPagesFromPDF(arrayBuffer) {
-      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-      const pdf = await loadingTask.promise;
-      const pagesData = [];
-
-      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        const page = await pdf.getPage(pageNum);
-        const textContent = await page.getTextContent();
-
-        // Filtrar ítems vacíos y obtener coordenadas X, Y
-        const items = textContent.items
-          .filter(item => item.str && item.str.trim().length > 0)
-          .map(item => ({
-            str: item.str.trim(),
-            x: item.transform[4],
-            y: item.transform[5],
-            width: item.width || 0
-          }));
-
-        // Ordenar por Y descendente (de arriba hacia abajo) con tolerancia de 4pt, luego X ascendente (izquierda a derecha)
-        items.sort((a, b) => {
-          if (Math.abs(a.y - b.y) > 4) {
-            return b.y - a.y;
-          }
-          return a.x - b.x;
-        });
-
-        // Agrupar en líneas visuales
-        const lines = [];
-        let currentLine = [];
-        let lastY = null;
-
-        for (const item of items) {
-          if (lastY === null || Math.abs(item.y - lastY) <= 4.5) {
-            currentLine.push(item);
-          } else {
-            lines.push(currentLine);
-            currentLine = [item];
-          }
-          lastY = item.y;
+    function groupIntoLines(items, yTol = 4.5) {
+      const sorted = [...items].sort((a, b) => (Math.abs(a.y - b.y) <= yTol ? a.x - b.x : a.y - b.y));
+      const lines = [];
+      for (const it of sorted) {
+        let line = lines.find(l => Math.abs(l.y - it.y) <= yTol);
+        if (!line) {
+          line = { y: it.y, items: [] };
+          lines.push(line);
         }
-        if (currentLine.length > 0) {
-          lines.push(currentLine);
-        }
+        line.items.push(it);
+      }
+      for (const l of lines) {
+        l.items.sort((a, b) => a.x - b.x);
+        l.text = l.items.map(i => i.str).join(" ").replace(/\s+/g, " ").trim();
+      }
+      return lines;
+    }
 
-        pagesData.push({
-          pageNum,
-          items,
-          lines: lines.map(lineItems => ({
-            y: lineItems[0].y,
-            items: lineItems,
-            text: lineItems.map(i => i.str).join(' ')
-          }))
-        });
+    function parseAuditPDF(pages) {
+      const allItems = pages.flatMap(p => p.items.map(i => ({ ...i, page: p.pageNum })));
+      const p1Lines = groupIntoLines(pages[0]?.items || []);
+
+      // Header metadata
+      let station = "—";
+      let period = "—";
+      let client = "—";
+      let totalScoreStr = "—";
+      let totalPctStr = "—";
+
+      const fullP1Text = p1Lines.map(l => l.text).join(" | ");
+      const periodMatch = fullP1Text.match(/\b(Ene|Feb|Mar|Abr|May|Jun|Jul|Ago|Sep|Oct|Nov|Dic)[\s\-–]*(?:Ene|Feb|Mar|Abr|May|Jun|Jul|Ago|Sep|Oct|Nov|Dic)?\s*20\d{2}\b/i);
+      if (periodMatch) period = periodMatch[0];
+
+      const visitaMatch = fullP1Text.match(/visita al sitio para\s+([A-Za-zÁÉÍÓÚáéíóúñÑ0-9\s\-]+?)\./i);
+      if (visitaMatch) station = visitaMatch[1].trim();
+
+      // Find Station name on page 1 if not found
+      if (station === "—") {
+        for (let i = 0; i < p1Lines.length; i++) {
+          if (normalize(p1Lines[i].text) === "estacion" && p1Lines[i + 1]) {
+            station = p1Lines[i + 1].text;
+            break;
+          }
+        }
       }
 
-      return pagesData;
-    }
-
-    // Parser inteligente adaptado a la plantilla de Auditoría de Imagen Puma Energy
-    function parseAuditPDF(pagesData, fileName = '') {
-      const allLines = pagesData.flatMap(p => p.lines.map(l => ({ ...l, pageNum: p.pageNum })));
-      const page1Lines = pagesData[0] ? pagesData[0].lines : [];
-
-      // 1. Extraer referencia desde el nombre del archivo o texto (ej. RSS-0001269)
-      let reference = 'S/R';
-      const refMatchFile = fileName.match(/(RSS-\d+)/i);
-      if (refMatchFile) {
-        reference = refMatchFile[1].toUpperCase();
-      } else {
-        const fullText = allLines.map(l => l.text).join(' ');
-        const refMatchText = fullText.match(/(RSS-\d+)/i);
-        if (refMatchText) reference = refMatchText[1].toUpperCase();
-      }
-
-      // 2. Extraer Estación y Período (Página 1)
-      let station = 'No especificada';
-      let period = 'No especificado';
-
-      for (let i = 0; i < page1Lines.length; i++) {
-        const lineText = page1Lines[i].text;
-        const norm = normalizeStr(lineText);
-
-        // Buscar "visita al sitio para [Estación]"
-        const siteMatch = lineText.match(/visita al sitio para\s+([A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s\-]+?)(?:\.|,|A continuación|$)/i);
-        if (siteMatch && siteMatch[1]) {
-          station = siteMatch[1].trim();
-        }
-
-        // Buscar fila con "Peridodo" / "Periodo" y "Estación"
-        if (norm.includes('peridodo') || norm.includes('periodo')) {
-          if (page1Lines[i + 1]) {
-            const nextItems = page1Lines[i + 1].items;
-            if (nextItems.length >= 2) {
-              period = nextItems[0].str;
-              if (station === 'No especificada') station = nextItems[1].str;
-            } else if (nextItems.length === 1) {
-              period = nextItems[0].str;
+      // Client name typically near end of document ("Nombre Cliente:")
+      for (const page of pages) {
+        const lines = groupIntoLines(page.items);
+        for (let i = 0; i < lines.length; i++) {
+          const t = lines[i].text;
+          const m = t.match(/Nombre\s+Cliente\s*:\s*(.+)/i);
+          if (m && m[1].trim()) {
+            client = m[1].trim();
+          } else if (/^Nombre\s+Cliente\s*:?$/i.test(t) && lines[i + 1]) {
+            const nextVal = lines[i + 1].text;
+            if (!/Firma\s+Cliente/i.test(nextVal) && nextVal.length > 1) {
+              client = nextVal;
             }
           }
         }
       }
 
-      // Si el nombre del archivo contiene la estación y aún no se detectó
-      if (station === 'No especificada' && fileName) {
-        const fnPart = fileName.split('-')[0];
-        if (fnPart && fnPart.length > 2) station = fnPart;
+      // Summary scores per area from Page 1
+      const areaSummary = {};
+      for (const a of AREAS) {
+        areaSummary[a.key] = { earned: 0, total: 0, pct: 0, hasScore: false };
       }
 
-      // 3. Extraer Nombre del Cliente (usualmente última página)
-      let client = 'No registrado';
-      for (let i = allLines.length - 1; i >= 0; i--) {
-        const t = allLines[i].text;
-        const clientMatch = t.match(/Nombre Cliente:\s*(.+)/i);
-        if (clientMatch && clientMatch[1]) {
-          client = clientMatch[1].replace(/Firma Cliente:.*/i, '').trim();
-          break;
-        }
-      }
-
-      // 4. Extraer Tabla Resumen de Página 1 (Categorías, Puntajes y Porcentajes)
-      let totalScore = '0/0';
-      let totalPct = 0;
-      const categories = STANDARD_CATEGORIES.map(c => ({
-        key: c.key,
-        label: c.label,
-        aliases: c.aliases,
-        score: '0/0',
-        pct: 0,
-        na: false,
-        findings: []
-      }));
-
-      for (const line of page1Lines) {
-        const norm = normalizeStr(line.text);
-
-        // Detectar Total Auditoria
-        if (norm.includes('total auditoria')) {
-          const scoreM = line.text.match(/(\d+\s*\/\s*\d+)/);
-          const pctM = line.text.match(/(\d{1,3}(?:[.,]\d{1,2})?)\s*%?$/);
-          if (scoreM) totalScore = scoreM[1].replace(/\s+/g, '');
-          if (pctM) totalPct = parseFloat(pctM[1].replace(',', '.'));
+      for (let i = 0; i < p1Lines.length; i++) {
+        const line = p1Lines[i];
+        if (/Total\s+Auditoria/i.test(line.text)) {
+          const combined = [line.text, p1Lines[i + 1]?.text || "", p1Lines[i + 2]?.text || ""].join(" ");
+          const frac = combined.match(/(\d+)\s*\/\s*(\d+)/);
+          const pct = combined.match(/(\d{1,3}(?:\.\d{1,2})?)\s*%?/);
+          if (frac) totalScoreStr = `${frac[1]}/${frac[2]}`;
+          const pctMatch = combined.match(/\b(\d{1,3}\.\d{2})\b/);
+          if (pctMatch) totalPctStr = `${pctMatch[1]}%`;
           continue;
         }
 
-        // Emparejar con cada una de las 10 categorías estándar
-        for (const cat of categories) {
-          const matchedAlias = cat.aliases.some(alias => norm.startsWith(alias) || norm.includes(alias));
-          if (matchedAlias && !norm.includes('resumen')) {
-            const scoreM = line.text.match(/(\d+\s*\/\s*\d+)/);
-            // Buscar el último número decimal o entero en la línea (el porcentaje)
-            const numbers = line.text.match(/(\d{1,3}(?:[.,]\d{1,2})?)/g);
-            if (scoreM) {
-              cat.score = scoreM[1].replace(/\s+/g, '');
-              if (cat.score === '0/0') cat.na = true;
-            }
-            if (numbers && numbers.length > 0) {
-              const lastNum = parseFloat(numbers[numbers.length - 1].replace(',', '.'));
-              if (!isNaN(lastNum) && lastNum <= 100) {
-                cat.pct = lastNum;
-              }
-            }
-          }
-        }
-      }
-
-      // 5. Recorrer páginas detalladas para encontrar Observaciones y respuestas "No"
-      let activeCategory = null;
-      const ignoreWords = new Set([
-        'si', 'sí', 'no', 'no aplica', 'limpieza', 'funcionamiento', 'estado',
-        'total', 'puntaje', '%', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
-        'puma', 'energy'
-      ]);
-
-      for (let i = 0; i < allLines.length; i++) {
-        const line = allLines[i];
-        const text = line.text.trim();
-        const norm = normalizeStr(text);
-
-        // Saltar tabla resumen de la primera página antes de "Acercamiento Inicial" detallado
-        if (line.pageNum === 1 && i < 18) continue;
-
-        // Detectar cambio de sección principal (ej. "Canopy", "Baños", "Tienda", etc.)
-        if (text.length < 40 && !norm.includes('observaciones') && !text.includes('?')) {
-          const foundCat = categories.find(c => c.aliases.some(a => norm === a));
-          if (foundCat) {
-            activeCategory = foundCat;
-            continue;
-          }
-        }
-
-        // Detectar bloques "Observaciones - [Subsección]"
-        const obsHeaderMatch = text.match(/Observaciones\s*[-–]\s*(.+)/i);
-        if (obsHeaderMatch && activeCategory) {
-          const subsectionName = obsHeaderMatch[1].trim();
-          const obsY = line.y;
-          const obsX = line.items[0] ? line.items[0].x : 0;
-
-          // Buscar texto que esté inmediatamente debajo de "Observaciones - ..." (Y menor, dentro de ~45pt)
-          // y alineado horizontalmente dentro de la misma columna de observaciones
-          const candidateTexts = [];
-          for (let j = i + 1; j < allLines.length; j++) {
-            const nextLine = allLines[j];
-            if (nextLine.pageNum !== line.pageNum) break;
-            const deltaY = obsY - nextLine.y;
-            if (deltaY > 55) break; // Demasiado abajo, ya pertenece a otra fila
-
-            // Revisar ítems individuales en esa línea
-            for (const item of nextLine.items) {
-              const itemNorm = normalizeStr(item.str);
-              // Ignorar respuestas estándar ("Sí", "No", etc.) o preguntas
-              if (ignoreWords.has(itemNorm)) continue;
-              if (item.str.includes('?')) continue;
-              if (/observaciones\s*[-–]/i.test(item.str)) continue;
-              // Si el ítem está en la zona horizontal de la tabla de evaluación (X > 110 y X < 480)
-              if (item.x >= obsX - 60 && item.x <= 480) {
-                candidateTexts.push(item.str);
-              }
-            }
-          }
-
-          const cleanObs = candidateTexts.join(' ').replace(/\s+/g, ' ').trim();
-          if (cleanObs.length > 2) {
-            // Evitar duplicados en la misma categoría y subsección
-            const alreadyExists = activeCategory.findings.some(
-              f => normalizeStr(f.part) === normalizeStr(subsectionName) && normalizeStr(f.text) === normalizeStr(cleanObs)
-            );
-            if (!alreadyExists) {
-              const isPenalized = activeCategory.pct < 100 && !activeCategory.na;
-              activeCategory.findings.push({
-                part: subsectionName,
-                text: cleanObs,
-                type: isPenalized ? 'penalty' : 'warning'
-              });
-            }
-          }
-        }
-
-        // Detectar respuestas "No" aisladas (no "No Aplica") dentro de una categoría con penalización
-        if (activeCategory && activeCategory.pct < 100 && !activeCategory.na) {
-          const hasExplicitNo = line.items.some(it => normalizeStr(it.str) === 'no');
-          if (hasExplicitNo) {
-            // Buscar hacia atrás la subsección más cercana ("Observaciones - X" o título izquierdo)
-            let nearestPart = activeCategory.label;
-            for (let k = i - 1; k >= Math.max(0, i - 12); k--) {
-              const prevText = allLines[k].text;
-              const prevObs = prevText.match(/Observaciones\s*[-–]\s*(.+)/i);
-              if (prevObs) {
-                nearestPart = prevObs[1].trim();
-                break;
-              }
-            }
-
-            // Si ya existe una observación registrada para esa parte, enriquecerla indicando penalización
-            const existing = activeCategory.findings.find(f => normalizeStr(f.part) === normalizeStr(nearestPart));
-            if (existing) {
-              existing.type = 'penalty';
-              if (!existing.text.toLowerCase().includes('penalización')) {
-                existing.text = `${existing.text} (Ítem evaluado: No)`;
-              }
-            } else {
-              activeCategory.findings.push({
-                part: nearestPart,
-                text: 'Criterio incumplido (Respuesta: No)',
-                type: 'penalty'
-              });
+        for (const a of AREAS) {
+          const normLine = normalize(line.text);
+          const normArea = normalize(a.key);
+          if (normLine === normArea || normLine.startsWith(normArea + " ")) {
+            const windowText = [line.text, p1Lines[i + 1]?.text || "", p1Lines[i + 2]?.text || ""].join(" ");
+            const frac = windowText.match(/(\d+)\s*\/\s*(\d+)/);
+            const pct = windowText.match(/\b(\d{1,3}\.\d{2})\b/);
+            if (frac) {
+              const earned = parseInt(frac[1], 10);
+              const total = parseInt(frac[2], 10);
+              areaSummary[a.key] = {
+                earned,
+                total,
+                pct: pct ? parseFloat(pct[1]) : (total > 0 ? (earned / total) * 100 : 0),
+                hasScore: true
+              };
             }
           }
         }
       }
 
-      // Si alguna categoría tiene <100% y no se capturó el texto específico, añadir aviso genérico editable
-      for (const cat of categories) {
-        if (!cat.na && cat.pct < 100 && cat.findings.length === 0) {
-          cat.findings.push({
-            part: 'Revisión general de área',
-            text: `Descuento de puntos detectado (${cat.score})`,
-            type: 'penalty'
-          });
+      // Parse detailed sections across pages 2+
+      const findingsByArea = {};
+      for (const a of AREAS) findingsByArea[a.key] = [];
+
+      // Identify section headers and "Observaciones - ..." anchors across all pages
+      for (const page of pages) {
+        if (page.pageNum === 1) continue;
+        const lines = groupIntoLines(page.items);
+
+        // Locate all "Observaciones - ..." lines on this page
+        const obsAnchors = [];
+        for (let idx = 0; idx < lines.length; idx++) {
+          const l = lines[idx];
+          const m = l.text.match(/^Observaciones\s*[-–]\s*(.+)$/i);
+          if (m) {
+            obsAnchors.push({
+              partName: cleanText(m[1]),
+              y: l.y,
+              x: l.items[0]?.x || 0,
+              lineIdx: idx
+            });
+          }
+        }
+
+        // Determine current area context on this page
+        let currentArea = null;
+        for (const l of lines) {
+          const nl = normalize(l.text);
+          for (const a of AREAS) {
+            if (nl === normalize(a.key)) {
+              currentArea = a.key;
+            }
+          }
+        }
+
+        for (let idx = 0; idx < obsAnchors.length; idx++) {
+          const anchor = obsAnchors[idx];
+          const nextAnchorY = obsAnchors[idx + 1] ? obsAnchors[idx + 1].y : page.height - 25;
+
+          // Determine which area this observation belongs to by nearest area header above anchor.y
+          let areaForAnchor = currentArea;
+          for (let j = anchor.lineIdx - 1; j >= 0; j--) {
+            const nl = normalize(lines[j].text);
+            const matchedArea = AREAS.find(a => nl === normalize(a.key));
+            if (matchedArea) {
+              areaForAnchor = matchedArea.key;
+              break;
+            }
+          }
+          if (!areaForAnchor) continue;
+
+          // Collect text strictly below anchor.y and above nextAnchorY
+          const belowItems = page.items.filter(
+            it => it.y > anchor.y + 2 && it.y < nextAnchorY - 2
+          );
+          const belowLines = groupIntoLines(belowItems);
+
+          // Filter out table headers, score summaries, or next section headers
+          const obsTexts = [];
+          for (const bl of belowLines) {
+            const t = bl.text;
+            if (!t) continue;
+            if (/^(Puntaje|%|Total|Limpieza|Funcionamiento|Estado)$/i.test(t)) continue;
+            if (/^\d+\s*\/\s*\d+$/.test(t)) continue;
+            if (/^\d{1,3}\.\d{2}$/.test(t)) continue;
+            if (AREAS.some(a => normalize(a.key) === normalize(t))) continue;
+            // Avoid capturing the next row's "Parte Evaluada" if it sits on the far left column (<110px) and is short
+            const leftOnly = bl.items.filter(i => i.x < 115).map(i => i.str).join(" ");
+            const rightSide = bl.items.filter(i => i.x >= 115).map(i => i.str).join(" ").trim();
+            if (rightSide) {
+              obsTexts.push(rightSide);
+            } else if (leftOnly && !/^(Sí|Si|No|No Aplica)$/i.test(leftOnly) && leftOnly.length > 18) {
+              obsTexts.push(leftOnly);
+            }
+          }
+
+          // Also check if there is a "No" answer near this part's band (from previous anchor or 45px above)
+          const prevAnchorY = idx > 0 ? obsAnchors[idx - 1].y : Math.max(40, anchor.y - 55);
+          const bandItems = page.items.filter(
+            it => it.y > prevAnchorY + 2 && it.y < anchor.y - 1
+          );
+          const hasNo = bandItems.some(it => /^(no)$/i.test(it.str.trim()));
+
+          const combinedObs = cleanText(obsTexts.join(" "));
+          const isRealObs =
+            combinedObs.length > 0 &&
+            !/^no\s*aplica$/i.test(combinedObs) &&
+            !/^sin\s*novedades?$/i.test(combinedObs);
+
+          if (hasNo || isRealObs) {
+            findingsByArea[areaForAnchor].push({
+              part: anchor.partName,
+              isPenalty: hasNo,
+              note: isRealObs
+                ? combinedObs
+                : "Ítem marcado como 'No' en la evaluación."
+            });
+          }
         }
       }
 
       return {
-        reference,
         station,
         period,
         client,
-        totalScore,
-        totalPct,
-        categories
+        totalScoreStr,
+        totalPctStr,
+        areaSummary,
+        findingsByArea
       };
     }
 
-    // Renderizar los datos en la hoja ejecutiva de 1 página
-    function renderReport(data) {
-      currentReport = data;
+    function renderReport(data, fileName) {
+      document.getElementById("docCode").textContent = fileName || "Reporte";
+      document.getElementById("metaStation").textContent = data.station;
+      document.getElementById("metaPeriod").textContent = data.period;
+      document.getElementById("metaScore").textContent = data.totalScoreStr;
+      document.getElementById("metaClient").textContent = data.client;
 
-      // Encabezado y metadatos
-      document.getElementById('repRef').textContent = data.reference;
-      document.getElementById('repStation').textContent = data.station;
-      document.getElementById('repPeriod').textContent = data.period;
-      document.getElementById('repClient').textContent = data.client;
-      document.getElementById('repTotalPct').textContent = `${data.totalPct.toFixed(2)}%`;
-      document.getElementById('repTotalScore').textContent = `(${data.totalScore})`;
-      document.getElementById('repFooterLeft').textContent = `Informe Ejecutivo Condensado · Estación ${data.station} (${data.period})`;
-
-      // Color dinámico del cuadro de nota global
-      const scoreBox = document.getElementById('repScoreBox');
-      const totalPctEl = document.getElementById('repTotalPct');
-      if (data.totalPct >= 90) {
-        scoreBox.className = 'bg-emerald-50 border border-emerald-200 rounded-lg p-3';
-        totalPctEl.className = 'text-lg sm:text-xl font-extrabold text-[#00843D]';
-      } else if (data.totalPct >= 80) {
-        scoreBox.className = 'bg-amber-50 border border-amber-200 rounded-lg p-3';
-        totalPctEl.className = 'text-lg sm:text-xl font-extrabold text-amber-700';
-      } else {
-        scoreBox.className = 'bg-red-50 border border-red-200 rounded-lg p-3';
-        totalPctEl.className = 'text-lg sm:text-xl font-extrabold text-[#E30613]';
+      const totalEarned = Object.values(data.areaSummary).reduce((acc, s) => acc + s.earned, 0);
+      const totalMax = Object.values(data.areaSummary).reduce((acc, s) => acc + s.total, 0);
+      const computedPct = totalMax > 0 ? ((totalEarned / totalMax) * 100).toFixed(2) + "%" : "0.00%";
+      const finalPct = data.totalPctStr !== "—" ? data.totalPctStr : computedPct;
+      if (data.totalScoreStr === "—" && totalMax > 0) {
+        document.getElementById("metaScore").textContent = `${totalEarned}/${totalMax}`;
       }
 
-      // Calcular KPIs
-      const applicableCats = data.categories.filter(c => !c.na);
-      const perfectCount = applicableCats.filter(c => c.pct >= 100).length;
-      let penaltyCount = 0;
-      let warningCount = 0;
+      let fullAreasCount = 0;
+      let applicableAreasCount = 0;
+      let penaltiesCount = 0;
+      let notesCount = 0;
 
-      data.categories.forEach(c => {
-        c.findings.forEach(f => {
-          if (f.type === 'penalty') penaltyCount++;
-          else warningCount++;
-        });
-      });
-
-      document.getElementById('kpiPerfectAreas').textContent = `${perfectCount} de ${applicableCats.length}`;
-      document.getElementById('kpiPenalties').textContent = penaltyCount;
-      document.getElementById('kpiWarnings').textContent = warningCount;
-
-      // Renderizar filas de la tabla
-      const tbody = document.getElementById('auditTableBody');
-      tbody.innerHTML = '';
-
-      data.categories.forEach(cat => {
-        if (cat.findings.length === 0) {
-          // Fila limpia (sin hallazgos o N/A)
-          const tr = document.createElement('tr');
-          tr.className = cat.na ? 'bg-slate-50/70 text-slate-400' : 'hover:bg-slate-50';
-
-          const pctDisplay = cat.na
-            ? `<span class="text-slate-400 font-medium">N/A</span>`
-            : `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-[#00843D]">${cat.pct.toFixed(2)}%</span>`;
-
-          const statusText = cat.na ? 'No aplica en esta estación' : 'Sin novedades';
-
-          tr.innerHTML = `
-            <td class="py-2 px-2.5 font-bold ${cat.na ? 'text-slate-500' : 'text-slate-900'}">${cat.label}</td>
-            <td class="py-2 px-2 text-center font-medium">${cat.score}</td>
-            <td class="py-2 px-2.5 text-center">${pctDisplay}</td>
-            <td class="py-2 px-2.5 text-slate-400">—</td>
-            <td class="py-2 px-2.5 text-slate-500">${statusText}</td>
-          `;
-          tbody.appendChild(tr);
-        } else {
-          // Fila(s) con hallazgos (penalización o nota preventiva)
-          cat.findings.forEach((finding, idx) => {
-            const isPenalty = finding.type === 'penalty';
-            const tr = document.createElement('tr');
-            tr.className = isPenalty ? 'bg-red-50/80' : 'bg-amber-50/80';
-
-            const pctBadge = isPenalty
-              ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-red-100 text-[#E30613]">${cat.pct.toFixed(2)}%</span>`
-              : `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-[#00843D]">${cat.pct.toFixed(2)}%</span>`;
-
-            const obsBadge = isPenalty
-              ? `<span class="inline-block text-[10px] font-extrabold uppercase tracking-wider text-[#E30613] mr-1">Penalización:</span>`
-              : `<span class="inline-block text-[10px] font-extrabold uppercase tracking-wider text-amber-700 mr-1">Nota Preventiva:</span>`;
-
-            tr.innerHTML = `
-              <td class="py-2 px-2.5 font-bold text-slate-900">${idx === 0 ? cat.label : ''}</td>
-              <td class="py-2 px-2 text-center font-semibold text-slate-800">${idx === 0 ? cat.score : ''}</td>
-              <td class="py-2 px-2.5 text-center">${idx === 0 ? pctBadge : ''}</td>
-              <td class="py-2 px-2.5 font-semibold text-slate-800">${finding.part}</td>
-              <td class="py-2 px-2.5 ${isPenalty ? 'text-red-900 font-medium' : 'text-amber-900 font-medium'}">
-                ${obsBadge}${finding.text}
-              </td>
-            `;
-            tbody.appendChild(tr);
-          });
+      for (const a of AREAS) {
+        const s = data.areaSummary[a.key];
+        if (s.total > 0) {
+          applicableAreasCount++;
+          if (s.earned === s.total) fullAreasCount++;
         }
-      });
-
-      // Generar texto dinámico de Foco de Acción
-      const penalizedCats = data.categories.filter(c => !c.na && c.pct < 100);
-      const warningFindings = data.categories.flatMap(c =>
-        c.findings.filter(f => f.type === 'warning').map(f => `${c.label} (${f.part}: ${f.text})`)
-      );
-
-      let actionHTML = `La estación <strong>${data.station}</strong> alcanzó un cumplimiento global del <strong>${data.totalPct.toFixed(2)}%</strong> (${data.totalScore} pts). `;
-
-      if (penalizedCats.length > 0) {
-        const details = penalizedCats.map(c => {
-          const fText = c.findings.map(f => `${f.part}: ${f.text}`).join('; ');
-          return `<strong>${c.label} (${c.pct.toFixed(2)}%)</strong> — ${fText}`;
-        }).join(' | ');
-        actionHTML += `Se requiere corrección prioritaria en las áreas con pérdida de puntaje: ${details}. `;
-      } else {
-        actionHTML += `No se registraron descuentos de puntaje en ninguna categoría auditada. `;
+        const list = data.findingsByArea[a.key] || [];
+        for (const f of list) {
+          if (f.isPenalty) penaltiesCount++;
+          else notesCount++;
+        }
       }
 
-      if (warningFindings.length > 0) {
-        actionHTML += `Adicionalmente, atender preventivamente las observaciones sin penalización: <strong>${warningFindings.join('; ')}</strong>.`;
+      document.getElementById("kpiPct").textContent = finalPct;
+      document.getElementById("kpiFull").textContent = `${fullAreasCount} de ${applicableAreasCount}`;
+      document.getElementById("kpiPen").textContent = String(penaltiesCount);
+      document.getElementById("kpiNotes").textContent = String(notesCount);
+
+      tableBody.innerHTML = "";
+      const plainLines = [
+        `*AUDITORÍA DE IMAGEN — ${data.station.toUpperCase()}*`,
+        `Período: ${data.period} | Puntaje: ${document.getElementById("metaScore").textContent} (${finalPct})`,
+        `Penalizaciones: ${penaltiesCount} | Observaciones: ${notesCount}`,
+        ""
+      ];
+
+      for (const a of AREAS) {
+        const s = data.areaSummary[a.key];
+        const list = data.findingsByArea[a.key] || [];
+        const isNA = s.total === 0;
+        const scoreDisplay = isNA ? "0/0" : `${s.earned}/${s.total}`;
+        const pctDisplay = isNA ? "N/A" : `${s.pct.toFixed(2)}%`;
+
+        const tr = document.createElement("tr");
+
+        const tdArea = document.createElement("td");
+        tdArea.className = "area-name";
+        tdArea.textContent = a.label;
+
+        const tdScore = document.createElement("td");
+        tdScore.className = "num";
+        tdScore.textContent = scoreDisplay;
+
+        const tdPct = document.createElement("td");
+        tdPct.className = "num";
+        tdPct.style.fontWeight = "700";
+        if (!isNA && s.pct < 100) tdPct.style.color = "#b91c1c";
+        else if (!isNA && s.pct === 100) tdPct.style.color = "#15803d";
+        tdPct.textContent = pctDisplay;
+
+        const tdPart = document.createElement("td");
+        const tdObs = document.createElement("td");
+
+        if (isNA) {
+          tdPart.innerHTML = `<span class="badge badge-na">No aplica</span>`;
+          tdObs.textContent = "Sin evaluación en esta estación.";
+          plainLines.push(`• *${a.label}* (${scoreDisplay} | ${pctDisplay}): No aplica.`);
+        } else if (list.length === 0) {
+          tdPart.innerHTML = `<span class="badge badge-ok">Conforme</span>`;
+          tdObs.textContent = "Sin novedades ni penalizaciones.";
+          plainLines.push(`• *${a.label}* (${scoreDisplay} | ${pctDisplay}): Sin novedades.`);
+        } else {
+          tdPart.innerHTML = list
+            .map(f => `<div class="finding-line"><strong>${escapeHtml(f.part)}</strong></div>`)
+            .join("");
+
+          tdObs.innerHTML = list
+            .map(f => {
+              const badge = f.isPenalty
+                ? `<span class="badge badge-pen">Penalización</span>`
+                : `<span class="badge badge-nota">Observación</span>`;
+              return `<div class="finding-line">${badge} ${escapeHtml(f.note)}</div>`;
+            })
+            .join("");
+
+          const detailStr = list
+            .map(f => `[${f.isPenalty ? "PENALIZACIÓN" : "OBS"} - ${f.part}] ${f.note}`)
+            .join(" / ");
+          plainLines.push(`• *${a.label}* (${scoreDisplay} | ${pctDisplay}): ${detailStr}`);
+        }
+
+        tr.appendChild(tdArea);
+        tr.appendChild(tdScore);
+        tr.appendChild(tdPct);
+        tr.appendChild(tdPart);
+        tr.appendChild(tdObs);
+        tableBody.appendChild(tr);
       }
 
-      document.getElementById('repActionSummary').innerHTML = actionHTML;
-
-      // Mostrar espacio de trabajo
-      uploadSection.classList.add('hidden');
-      errorBox.classList.add('hidden');
-      loadingIndicator.classList.add('hidden');
-      reportWorkspace.classList.remove('hidden');
+      lastPlainText = plainLines.join("\n");
+      copyBtn.disabled = false;
+      printBtn.disabled = false;
+      document.getElementById("footerTimestamp").textContent =
+        "Procesado el " + new Date().toLocaleString("es-PA");
     }
 
-    // Procesar archivo PDF seleccionado o arrastrado
-    async function handlePDFFile(file) {
-      if (!file) return;
-      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-        showError('Por favor selecciona un archivo con extensión .pdf válido.');
+    function escapeHtml(str) {
+      return (str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    async function handleFile(file) {
+      if (!file || file.type !== "application/pdf") {
+        statusMsg.textContent = "Por favor selecciona un archivo PDF válido.";
         return;
       }
-
-      errorBox.classList.add('hidden');
-      loadingIndicator.classList.remove('hidden');
-
+      statusMsg.textContent = `Procesando "${file.name}"...`;
       try {
-        const arrayBuffer = await file.arrayBuffer();
-        const pagesData = await extractOrderedPagesFromPDF(arrayBuffer);
-        if (!pagesData || pagesData.length === 0) {
-          throw new Error('El PDF parece estar vacío o protegido contra lectura.');
-        }
-        const parsedReport = parseAuditPDF(pagesData, file.name);
-        renderReport(parsedReport);
-        showToast(`Informe de ${parsedReport.station} generado correctamente`);
+        const buffer = await file.arrayBuffer();
+        const pages = await extractPages(buffer);
+        const parsed = parseAuditPDF(pages);
+        renderReport(parsed, file.name);
+        statusMsg.textContent = `Listo: informe generado para "${parsed.station}" (${pages.length} páginas analizadas).`;
       } catch (err) {
         console.error(err);
-        showError(`Ocurrió un problema leyendo el PDF: ${err.message}. Puedes probar con el botón de ejemplo o verificar que el PDF contenga texto seleccionable.`);
+        statusMsg.textContent = "Error al leer el PDF. Verifica que el archivo no esté protegido o dañado.";
       }
     }
 
-    // Generar texto formateado para WhatsApp leyendo el contenido actual (incluso si fue editado)
-    function copySummaryToWhatsApp() {
-      const station = document.getElementById('repStation').innerText.trim();
-      const period = document.getElementById('repPeriod').innerText.trim();
-      const totalPct = document.getElementById('repTotalPct').innerText.trim();
-      const totalScore = document.getElementById('repTotalScore').innerText.trim();
+    pdfInput.addEventListener("change", e => {
+      if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+    });
 
-      let lines = [];
-      lines.push(`⛽ *RESUMEN AUDITORÍA DE IMAGEN*`);
-      lines.push(`📍 *Estación:* ${station}`);
-      lines.push(`📅 *Período:* ${period}`);
-      lines.push(`🏆 *Nota Global:* *${totalPct}* ${totalScore}`);
-      lines.push(``);
-      lines.push(`📊 *RESULTADOS POR ÁREA:*`);
+    dropArea.addEventListener("click", () => pdfInput.click());
+    dropArea.addEventListener("dragover", e => {
+      e.preventDefault();
+      dropArea.classList.add("dragover");
+    });
+    dropArea.addEventListener("dragleave", () => dropArea.classList.remove("dragover"));
+    dropArea.addEventListener("drop", e => {
+      e.preventDefault();
+      dropArea.classList.remove("dragover");
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
 
-      const rows = document.querySelectorAll('#auditTableBody tr');
-      rows.forEach(tr => {
-        const cells = tr.querySelectorAll('td');
-        if (cells.length < 5) return;
-        const area = cells[0].innerText.trim();
-        const pct = cells[2].innerText.trim();
-        const part = cells[3].innerText.trim();
-        const obs = cells[4].innerText.trim();
-
-        if (pct === 'N/A') return;
-
-        if (area) {
-          const isLow = pct !== '100.00%';
-          const icon = isLow ? '❌' : (obs !== 'Sin novedades' ? '⚠️' : '✅');
-          lines.push(`${icon} *${area}:* ${pct}`);
-        }
-        if (obs !== 'Sin novedades' && obs !== 'No aplica en esta estación') {
-          lines.push(`   ↳ _${part}:_ ${obs}`);
-        }
-      });
-
-      const whatsappText = lines.join('\n');
-
-      // Copiado compatible con iFrames y navegadores modernos
-      const tempTextArea = document.createElement('textarea');
-      tempTextArea.value = whatsappText;
-      tempTextArea.style.position = 'fixed';
-      tempTextArea.style.left = '-9999px';
-      document.body.appendChild(tempTextArea);
-      tempTextArea.select();
+    copyBtn.addEventListener("click", async () => {
+      if (!lastPlainText) return;
       try {
-        document.execCommand('copy');
-        showToast('Resumen copiado al portapapeles listo para WhatsApp', '📋');
-      } catch (e) {
-        showToast('No se pudo copiar automáticamente', '⚠️');
+        await navigator.clipboard.writeText(lastPlainText);
+        const prev = copyBtn.textContent;
+        copyBtn.textContent = "¡Copiado!";
+        setTimeout(() => (copyBtn.textContent = prev), 1600);
+      } catch {
+        statusMsg.textContent = "No se pudo copiar automáticamente al portapapeles.";
       }
-      document.body.removeChild(tempTextArea);
-    }
-
-    // Alternar modo edición en pantalla
-    function toggleEditMode() {
-      isEditMode = !isEditMode;
-      const editableSelectors = [
-        '#repRef', '#repStation', '#repPeriod', '#repClient',
-        '#repTotalPct', '#repTotalScore', '#repActionSummary',
-        '#auditTableBody td'
-      ];
-      const elements = document.querySelectorAll(editableSelectors.join(','));
-      elements.forEach(el => {
-        el.setAttribute('contenteditable', isEditMode ? 'true' : 'false');
-      });
-
-      if (isEditMode) {
-        reportSheet.classList.add('editing-active');
-        document.getElementById('editBanner').classList.remove('hidden');
-        document.getElementById('editBtnLabel').textContent = 'Finalizar edición';
-      } else {
-        reportSheet.classList.remove('editing-active');
-        document.getElementById('editBanner').classList.add('hidden');
-        document.getElementById('editBtnLabel').textContent = 'Editar texto manualmente';
-        showToast('Cambios aplicados al informe', '✏️');
-      }
-    }
-
-    // Eventos de interfaz
-    document.getElementById('fileInputMain').addEventListener('change', e => handlePDFFile(e.target.files[0]));
-    document.getElementById('fileInputTop').addEventListener('change', e => handlePDFFile(e.target.files[0]));
-
-    document.getElementById('btnLoadSampleMain').addEventListener('click', () => {
-      renderReport(getSampleData());
-      showToast('Ejemplo cargado: Estación Penonomé');
-    });
-    document.getElementById('btnLoadSampleTop').addEventListener('click', () => {
-      renderReport(getSampleData());
-      showToast('Ejemplo cargado: Estación Penonomé');
     });
 
-    document.getElementById('btnReset').addEventListener('click', () => {
-      if (isEditMode) toggleEditMode();
-      reportWorkspace.classList.add('hidden');
-      uploadSection.classList.remove('hidden');
-      document.getElementById('fileInputMain').value = '';
-      document.getElementById('fileInputTop').value = '';
-    });
-
-    document.getElementById('btnToggleEdit').addEventListener('click', toggleEditMode);
-    document.getElementById('btnCloseEditBanner').addEventListener('click', toggleEditMode);
-    document.getElementById('btnCopyWhatsApp').addEventListener('click', copySummaryToWhatsApp);
-    document.getElementById('btnPrintPDF').addEventListener('click', () => {
-      if (isEditMode) toggleEditMode();
+    printBtn.addEventListener("click", () => {
       window.print();
-    });
-
-    // Eventos Drag & Drop
-    ['dragenter', 'dragover'].forEach(evtName => {
-      dropZone.addEventListener(evtName, e => {
-        e.preventDefault();
-        e.stopPropagation();
-        dropZone.classList.add('border-[#00843D]', 'bg-emerald-50/40');
-      });
-    });
-
-    ['dragleave', 'drop'].forEach(evtName => {
-      dropZone.addEventListener(evtName, e => {
-        e.preventDefault();
-        e.stopPropagation();
-        dropZone.classList.remove('border-[#00843D]', 'bg-emerald-50/40');
-      });
-    });
-
-    dropZone.addEventListener('drop', e => {
-      const files = e.dataTransfer.files;
-      if (files && files.length > 0) {
-        handlePDFFile(files[0]);
-      }
     });
   </script>
 </body>
