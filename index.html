@@ -32,11 +32,11 @@
       background: var(--white);
       color: var(--text);
       font-size: 12px;
-      line-height: 1.28;
+      line-height: 1.3;
     }
 
     .toolbar {
-      max-width: 980px;
+      max-width: 960px;
       margin: 12px auto 8px;
       padding: 0 10px;
       display: flex;
@@ -87,7 +87,7 @@
     }
 
     .dropzone {
-      max-width: 980px;
+      max-width: 960px;
       margin: 0 auto 8px;
       padding: 0 10px;
     }
@@ -104,7 +104,7 @@
     }
 
     .status {
-      max-width: 980px;
+      max-width: 960px;
       margin: 0 auto 6px;
       padding: 0 10px;
       font-size: 11px;
@@ -112,7 +112,7 @@
     }
 
     .page-container {
-      max-width: 980px;
+      max-width: 960px;
       margin: 0 auto 20px;
       padding: 0 10px;
     }
@@ -200,16 +200,16 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 10.5px;
+      font-size: 11px;
     }
 
     thead th {
       background: var(--green);
       color: var(--white);
       border: 1px solid var(--green-dark);
-      padding: 4px 6px;
+      padding: 5px 7px;
       text-align: left;
-      font-size: 9px;
+      font-size: 9.5px;
       text-transform: uppercase;
     }
 
@@ -220,29 +220,19 @@
 
     tbody td {
       border: 1px solid var(--line);
-      padding: 3.5px 6px;
-      vertical-align: top;
+      padding: 4.5px 7px;
+      vertical-align: middle;
       background: var(--white);
       word-wrap: break-word;
       overflow-wrap: break-word;
     }
 
-    tbody tr.has-finding td {
+    tbody tr.not-applicable td {
       background: var(--red-soft);
     }
 
     .area-col {
       font-weight: 700;
-      max-width: 150px;
-    }
-
-    .part-col {
-      max-width: 190px;
-    }
-
-    .pct-bad {
-      color: var(--red);
-      font-weight: 800;
     }
 
     .pct-ok {
@@ -250,22 +240,36 @@
       font-weight: 800;
     }
 
-    .no-inc {
-      color: var(--green-dark);
-      font-weight: 600;
+    .pct-na {
+      color: var(--red);
+      font-weight: 800;
     }
 
-    .obs-line {
-      margin-bottom: 2px;
+    .tag-aplica {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--green-soft);
+      color: var(--green);
+      border: 1px solid var(--green-border);
+      font-weight: 800;
+      font-size: 10px;
     }
 
-    .obs-line:last-child {
-      margin-bottom: 0;
+    .tag-no-aplica {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--red-soft);
+      color: var(--red);
+      border: 1px solid var(--red-border);
+      font-weight: 800;
+      font-size: 10px;
     }
 
     .page-foot {
-      margin-top: 7px;
-      padding-top: 4px;
+      margin-top: 8px;
+      padding-top: 5px;
       border-top: 1px solid var(--green);
       display: flex;
       justify-content: space-between;
@@ -279,31 +283,25 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
       table {
-        font-size: 9.5px;
+        font-size: 10px;
       }
       thead th {
-        font-size: 8px;
-        padding: 3.5px 4px;
+        font-size: 8.5px;
+        padding: 4px 5px;
       }
       tbody td {
-        padding: 3px 4px;
-      }
-      .area-col {
-        max-width: 105px;
-      }
-      .part-col {
-        max-width: 120px;
+        padding: 4px 5px;
       }
     }
 
     @media print {
       @page {
         size: letter portrait;
-        margin: 5mm;
+        margin: 6mm;
       }
 
       body {
-        font-size: 9px;
+        font-size: 9.5px;
       }
 
       .toolbar, .dropzone, .status {
@@ -318,56 +316,13 @@
 
       .report-page {
         border: 1.5px solid var(--green);
-        padding: 6px 8px;
+        padding: 8px 10px;
         overflow: visible;
       }
 
-      .header-bar {
-        padding: 4px 7px;
-        margin-bottom: 5px;
+      .header-bar, .info-card, thead th, tbody td, .tag-aplica, .tag-no-aplica {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
-      }
-
-      .header-bar h2 {
-        font-size: 11px;
-      }
-
-      .info-strip {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 4px;
-        margin-bottom: 5px;
-      }
-
-      .info-card {
-        padding: 3px 5px;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-
-      .info-card .v {
-        font-size: 10px;
-      }
-
-      thead th {
-        padding: 2.5px 4px;
-        font-size: 8px;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-
-      tbody td {
-        padding: 2px 4px;
-        font-size: 8.5px;
-        line-height: 1.15;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-
-      .page-foot {
-        margin-top: 4px;
-        padding-top: 3px;
-        font-size: 7.5px;
       }
     }
   </style>
@@ -429,7 +384,7 @@
               <th class="center">Puntos</th>
               <th class="center">% Alcanzado</th>
               <th>Parte Evaluada</th>
-              <th>Observaciones</th>
+              <th class="center">Estado</th>
             </tr>
           </thead>
           <tbody id="reportBody">
@@ -452,16 +407,16 @@
       "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
     const AREAS = [
-      { key: "Acercamiento Inicial", defaultPart: "Fachada General" },
-      { key: "MID", defaultPart: "MID / Letrero Secundario de Precios" },
-      { key: "Canopy", defaultPart: "Columnas Canopy" },
-      { key: "Pista", defaultPart: "Accesos / Rodadura, Rejillas / Pista Debajo de Canopy" },
-      { key: "Área de Surtidores", defaultPart: "Surtidores / Islas / Servicios" },
-      { key: "Letreros y Alrededor Externo", defaultPart: "Letreros / Jardines / Estacionamientos / Aceras" },
-      { key: "Baños", defaultPart: "Exterior / Infraestructura / Accesorios / Control" },
-      { key: "Tienda", defaultPart: "Fachada / Infraestructura / Exhibición / Ambiente" },
-      { key: "Uniformes", defaultPart: "Personal de Pista y Tienda" },
-      { key: "Otras Áreas Comunes", defaultPart: "Lubricentro / Car Wash / Terraza" }
+      { key: "Acercamiento Inicial", part: "Fachada General" },
+      { key: "MID", part: "MID / Letrero Secundario de Precios" },
+      { key: "Canopy", part: "Columnas Canopy" },
+      { key: "Pista", part: "Accesos / Rodadura, Rejillas / Pista Debajo de Canopy" },
+      { key: "Área de Surtidores", part: "Surtidores / Islas / Servicios" },
+      { key: "Letreros y Alrededor Externo", part: "Letreros / Jardines / Estacionamientos / Aceras" },
+      { key: "Baños", part: "Exterior / Infraestructura / Accesorios / Control" },
+      { key: "Tienda", part: "Fachada / Infraestructura / Exhibición / Ambiente" },
+      { key: "Uniformes", part: "Personal de Pista y Tienda" },
+      { key: "Otras Áreas Comunes", part: "Lubricentro / Car Wash / Terraza" }
     ];
 
     const pdfInput = document.getElementById("pdfFile");
@@ -494,72 +449,6 @@
         .replace(/"/g, "&quot;");
     }
 
-    function isIgnoredToken(txt) {
-      const t = clean(txt);
-      if (!t) return true;
-      if (t.includes("?")) return true;
-      if (/^observaciones\s*[-–]/i.test(t)) return true;
-      if (/^(sí|si|no|no aplica|limpieza|funcionamiento|estado|puntaje|%|total)$/i.test(t)) return true;
-      if (/^\d+\s*\/\s*\d+$/.test(t) || /^\d{1,3}(\.\d{1,2})?%?$/.test(t) || /^\d{1,2}$/.test(t)) return true;
-      return false;
-    }
-
-    function isChecklistText(txt) {
-      const t = norm(txt);
-      if (!t) return true;
-      if (txt.includes("?")) return true;
-      // Filtrar textos largos o preguntas del cuestionario
-      const checklistStarts = [
-        "se ve limpia",
-        "se encuentra libre",
-        "se encuentran libres",
-        "se encuentra en buen",
-        "se encuentran en buen",
-        "no puede haber",
-        "puede que haya",
-        "tiene disponible",
-        "cuenta con un",
-        "los elementos de",
-        "la fachada de",
-        "la entrada y",
-        "la rodadura de",
-        "la rodadura y",
-        "la pista debajo",
-        "los dispositivos de",
-        "los qrs de",
-        "las isletas,",
-        "los exhibidores de",
-        "los basureros y",
-        "las mangueras de",
-        "los extinguidores se",
-        "la caseta de",
-        "los letreros se",
-        "el espacio dedicado",
-        "los jardines en",
-        "los estacionamientos de",
-        "las aceras y",
-        "el rotulo",
-        "el bano se",
-        "la musica en",
-        "la tienda se",
-        "el uniforme del",
-        "el personal de",
-        "los elementos del",
-        "la terraza y",
-        "sin partes faltantes",
-        "no descolorido",
-        "no despintado",
-        "descamado",
-        "libres de oxido",
-        "letrero secundario de precios",
-        "arrojado",
-        "arrollado"
-      ];
-      if (checklistStarts.some(p => t.startsWith(p))) return true;
-      if (t.length > 65) return true;
-      return false;
-    }
-
     async function readPdf(buffer) {
       const doc = await pdfjsLib.getDocument({ data: buffer }).promise;
       const pages = [];
@@ -572,8 +461,7 @@
           .map(it => ({
             str: it.str.trim(),
             x: it.transform[4],
-            y: vp.height - it.transform[5],
-            w: it.width || 0
+            y: vp.height - it.transform[5]
           }));
         pages.push({ pageNum: i, height: vp.height, items });
       }
@@ -650,95 +538,37 @@
         }
       }
 
-      const notesByArea = {};
-      for (const a of AREAS) notesByArea[a.key] = [];
-
       let penaltyCount = 0;
+      const noAplicaAreas = new Set();
 
       for (const pg of pages) {
+        for (const it of pg.items) {
+          if (/^no$/i.test(it.str.trim())) penaltyCount++;
+        }
         if (pg.pageNum === 1) continue;
-        const lines = toLines(pg.items);
 
+        const lines = toLines(pg.items);
         const areaMarkers = [];
         for (const l of lines) {
           const found = AREAS.find(a => norm(a.key) === norm(l.text));
           if (found) areaMarkers.push({ area: found.key, y: l.y });
         }
 
-        const obsLines = [];
-        for (let idx = 0; idx < lines.length; idx++) {
-          const m = lines[idx].text.match(/^Observaciones\s*[-–]\s*(.+)$/i);
-          if (m) {
-            obsLines.push({
-              part: clean(m[1]),
-              y: lines[idx].y,
-              x: lines[idx].items[0]?.x || 0
-            });
-          }
-        }
-
-        for (let idx = 0; idx < obsLines.length; idx++) {
-          const cur = obsLines[idx];
-          const nextObsY = obsLines[idx + 1] ? obsLines[idx + 1].y - 1 : pg.height - 20;
-          const prevObsY = idx > 0 ? obsLines[idx - 1].y : Math.max(20, cur.y - 80);
-
-          let area = null;
-          for (let m = areaMarkers.length - 1; m >= 0; m--) {
-            if (areaMarkers[m].y <= cur.y + 5) {
-              area = areaMarkers[m].area;
-              break;
+        for (const l of lines) {
+          if (/no\s+aplica/i.test(l.text)) {
+            let currentArea = null;
+            for (let m = areaMarkers.length - 1; m >= 0; m--) {
+              if (areaMarkers[m].y <= l.y + 5) {
+                currentArea = areaMarkers[m].area;
+                break;
+              }
             }
-          }
-          if (!area) area = areaMarkers[0]?.area || null;
-          if (!area) continue;
-
-          const nextAreaMarker = areaMarkers.find(m => m.y > cur.y + 2 && m.y < nextObsY);
-          const limitY = nextAreaMarker ? nextAreaMarker.y - 1 : Math.min(nextObsY, cur.y + 26);
-
-          const evalItems = pg.items.filter(it => it.y > prevObsY + 1 && it.y < cur.y - 1);
-          const hasPenalty = evalItems.some(it => /^no$/i.test(it.str.trim()));
-          if (hasPenalty) penaltyCount++;
-
-          // Buscar estrictamente en el recuadro/banda de observación de esta parte evaluada
-          const obsBand = pg.items.filter(
-            it => it.y > cur.y + 1.5 && it.y <= limitY
-          );
-          const bandRows = toLines(obsBand);
-
-          const extracted = [];
-          for (const br of bandRows) {
-            if (AREAS.some(a => norm(a.key) === norm(br.text))) break;
-            if (/^observaciones\s*[-–]/i.test(br.text)) break;
-
-            const filtered = br.items
-              .filter(it => !isIgnoredToken(it.str))
-              .map(it => it.str);
-            const joined = clean(filtered.join(" "));
-            if (!joined || isChecklistText(joined)) continue;
-
-            // Ignorar nombres de partes en la columna izquierda
-            if (br.items.every(it => it.x < 100) && joined.length <= 28 && !/\s/.test(joined)) continue;
-
-            extracted.push(joined);
-          }
-
-          const observation = clean(extracted.join(" "));
-          if (observation.length > 0 && !isChecklistText(observation)) {
-            const exists = notesByArea[area].some(
-              n => norm(n.part) === norm(cur.part) && norm(n.observation) === norm(observation)
-            );
-            if (!exists) {
-              notesByArea[area].push({
-                part: cur.part,
-                observation,
-                penalty: hasPenalty
-              });
-            }
+            if (currentArea) noAplicaAreas.add(currentArea);
           }
         }
       }
 
-      return { station, period, client, totalScore, totalPct, penaltyCount, scores, notesByArea };
+      return { station, period, client, totalScore, totalPct, penaltyCount, scores, noAplicaAreas };
     }
 
     function render(data, fileName) {
@@ -760,37 +590,27 @@
 
       for (const a of AREAS) {
         const sc = data.scores[a.key];
-        const comments = data.notesByArea[a.key] || [];
-        const hasComment = comments.length > 0;
-        const rowHasPen = comments.some(c => c.penalty) || (sc.total > 0 && sc.earned < sc.total);
+        const applies = sc.total > 0 && !data.noAplicaAreas.has(a.key);
 
         const tr = document.createElement("tr");
-        if (rowHasPen) tr.className = "has-finding";
+        if (!applies) tr.className = "not-applicable";
 
-        const pctStr = sc.total > 0 ? `${sc.pct.toFixed(2)}%` : "0.00%";
-        const pctClass = sc.total > 0 && sc.pct < 100 ? "pct-bad" : "pct-ok";
-
-        const partHtml = hasComment
-          ? comments.map(c => `<div class="obs-line">${esc(c.part)}</div>`).join("")
-          : `<div class="obs-line">${esc(a.defaultPart)}</div>`;
-
-        const obsHtml = hasComment
-          ? comments.map(c => `<div class="obs-line">${esc(c.observation)}</div>`).join("")
-          : `<div class="obs-line no-inc">Sin incidencias</div>`;
+        const pctStr = applies ? `${sc.pct.toFixed(2)}%` : "0.00%";
+        const pctClass = applies ? "pct-ok" : "pct-na";
+        const statusBadge = applies
+          ? `<span class="tag-aplica">Aplica</span>`
+          : `<span class="tag-no-aplica">No aplica</span>`;
 
         tr.innerHTML = `
           <td class="area-col">${esc(a.key)}</td>
           <td class="center">${sc.earned}/${sc.total}</td>
           <td class="center ${pctClass}">${pctStr}</td>
-          <td class="part-col">${partHtml}</td>
-          <td>${obsHtml}</td>
+          <td>${esc(a.part)}</td>
+          <td class="center">${statusBadge}</td>
         `;
         reportBody.appendChild(tr);
 
-        const waPart = hasComment
-          ? comments.map(c => `${c.part}: ${c.observation}`).join(" | ")
-          : "Sin incidencias";
-        summaryLines.push(`• *${a.key}* (${sc.earned}/${sc.total} · ${pctStr}): ${waPart}`);
+        summaryLines.push(`• *${a.key}* (${sc.earned}/${sc.total} · ${pctStr}) — ${applies ? "Aplica" : "No aplica"}`);
       }
 
       plainSummary = summaryLines.join("\n");
