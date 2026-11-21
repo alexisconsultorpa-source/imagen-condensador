@@ -168,16 +168,6 @@
       min-width: 0;
     }
 
-    .info-card.alert {
-      border-color: var(--red-border);
-      background: var(--red-soft);
-    }
-
-    .info-card.good {
-      border-color: var(--green-border);
-      background: var(--green-soft);
-    }
-
     .info-card .k {
       font-size: 8.5px;
       font-weight: 700;
@@ -189,11 +179,9 @@
       font-size: 12.5px;
       font-weight: 800;
       margin-top: 1px;
+      color: var(--text);
       word-break: break-word;
     }
-
-    .info-card.alert .v { color: var(--red); }
-    .info-card.good .v { color: var(--green); }
 
     .table-scroll {
       width: 100%;
@@ -374,11 +362,11 @@
           <div class="k">Período</div>
           <div class="v" id="valPeriod">—</div>
         </div>
-        <div class="info-card good" id="pctCard">
+        <div class="info-card">
           <div class="k">% Alcanzado</div>
           <div class="v" id="valPct">—</div>
         </div>
-        <div class="info-card good" id="scoreCard">
+        <div class="info-card">
           <div class="k">Puntaje</div>
           <div class="v" id="valScore">—</div>
         </div>
@@ -503,8 +491,6 @@
       let client = "—";
       let totalScore = "—";
       let totalPct = "—";
-      let totalEarned = null;
-      let totalExpected = null;
 
       const mPeriod = p1Text.match(/\b(Ene|Feb|Mar|Abr|May|Jun|Jul|Ago|Sep|Oct|Nov|Dic)[\s\-–]*(?:Ene|Feb|Mar|Abr|May|Jun|Jul|Ago|Sep|Oct|Nov|Dic)?\s*20\d{2}\b/i);
       if (mPeriod) period = mPeriod[0];
@@ -529,11 +515,7 @@
         if (/Total\s+Auditoria/i.test(line.text)) {
           const f = win.match(/(\d+)\s*\/\s*(\d+)/);
           const p = win.match(/\b(\d{1,3}\.\d{2})\b/);
-          if (f) {
-            totalEarned = parseInt(f[1], 10);
-            totalExpected = parseInt(f[2], 10);
-            totalScore = `${totalEarned}/${totalExpected}`;
-          }
+          if (f) totalScore = `${f[1]}/${f[2]}`;
           if (p) totalPct = `${p[1]}%`;
           continue;
         }
@@ -577,17 +559,7 @@
         }
       }
 
-      return {
-        station,
-        period,
-        client,
-        totalScore,
-        totalPct,
-        totalEarned,
-        totalExpected,
-        scores,
-        noAplicaAreas
-      };
+      return { station, period, client, totalScore, totalPct, scores, noAplicaAreas };
     }
 
     function render(data, fileName) {
@@ -598,23 +570,6 @@
       document.getElementById("valScore").textContent = data.totalScore;
       document.getElementById("valClient").textContent = `Encargado: ${data.client}`;
       document.getElementById("valDate").textContent = new Date().toLocaleDateString("es-PA");
-
-      const scoreBelowExpected =
-        data.totalEarned !== null &&
-        data.totalExpected !== null &&
-        data.totalEarned < data.totalExpected;
-
-      const scoreCard = document.getElementById("scoreCard");
-      const pctCard = document.getElementById("pctCard");
-      scoreCard.classList.remove("good", "alert");
-      pctCard.classList.remove("good", "alert");
-      if (scoreBelowExpected) {
-        scoreCard.classList.add("alert");
-        pctCard.classList.add("alert");
-      } else {
-        scoreCard.classList.add("good");
-        pctCard.classList.add("good");
-      }
 
       reportBody.innerHTML = "";
       const summaryLines = [
