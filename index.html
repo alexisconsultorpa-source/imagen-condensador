@@ -3,20 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lector de Auditoría de Imagen · Puma Energy</title>
+  <title>Informe Condensado de Auditoría de Imagen</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     :root {
-      --bg: #f1f5f9;
-      --surface: #ffffff;
-      --ink: #0f172a;
-      --muted: #64748b;
+      --green: #15803d;
+      --green-dark: #14532d;
+      --green-soft: #f0fdf4;
+      --green-border: #bbf7d0;
+      --red: #b91c1c;
+      --red-dark: #7f1d1d;
+      --red-soft: #fef2f2;
+      --red-border: #fecaca;
+      --white: #ffffff;
       --line: #cbd5e1;
-      --danger: #b91c1c;
-      --danger-bg: #fef2f2;
-      --warn: #b45309;
-      --warn-bg: #fffbeb;
-      --ok: #15803d;
+      --text: #111827;
+      --muted: #4b5563;
     }
 
     * {
@@ -27,209 +29,163 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--ink);
-      line-height: 1.35;
-      font-size: 13px;
+      background: var(--white);
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.3;
     }
 
     .toolbar {
-      max-width: 1020px;
-      margin: 18px auto 12px;
-      padding: 0 14px;
+      max-width: 980px;
+      margin: 14px auto 10px;
+      padding: 0 12px;
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
+      gap: 8px;
       justify-content: space-between;
-    }
-
-    .brand {
-      display: flex;
       align-items: center;
-      gap: 10px;
     }
 
-    .brand-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #e11d48;
-      box-shadow: 0 0 0 3px #ffe4e6;
-    }
-
-    .brand h1 {
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: -0.01em;
+    .toolbar-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--green-dark);
     }
 
     .actions {
       display: flex;
-      flex-wrap: wrap;
       gap: 8px;
+      flex-wrap: wrap;
     }
 
-    button, .upload-btn {
+    button, .upload-label {
       appearance: none;
-      border: 1px solid var(--ink);
-      background: var(--ink);
-      color: #fff;
-      padding: 7px 13px;
-      border-radius: 6px;
-      font-size: 12.5px;
-      font-weight: 600;
+      border: 1px solid var(--green);
+      background: var(--green);
+      color: var(--white);
+      padding: 6px 12px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 700;
       cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: opacity 0.15s ease, transform 0.1s ease;
     }
 
-    button:hover:not(:disabled), .upload-btn:hover {
-      opacity: 0.9;
+    button.btn-red {
+      background: var(--red);
+      border-color: var(--red);
     }
 
-    button:active:not(:disabled) {
-      transform: scale(0.99);
+    button.btn-white {
+      background: var(--white);
+      color: var(--green-dark);
+      border-color: var(--green);
     }
 
     button:disabled {
-      opacity: 0.4;
+      opacity: 0.45;
       cursor: not-allowed;
     }
 
-    button.secondary {
-      background: #fff;
-      color: var(--ink);
-      border-color: var(--line);
-    }
-
     .dropzone {
-      max-width: 1020px;
-      margin: 0 auto 14px;
-      padding: 0 14px;
-    }
-
-    .drop-area {
-      border: 1.5px dashed #94a3b8;
-      background: #f8fafc;
-      border-radius: 8px;
-      padding: 14px 18px;
-      text-align: center;
-      color: var(--muted);
-      font-size: 12.5px;
-      cursor: pointer;
-      transition: border-color 0.15s ease, background 0.15s ease;
-    }
-
-    .drop-area.dragover {
-      border-color: var(--ink);
-      background: #eef2ff;
-      color: var(--ink);
-    }
-
-    .status-msg {
-      max-width: 1020px;
+      max-width: 980px;
       margin: 0 auto 10px;
-      padding: 0 14px;
+      padding: 0 12px;
+    }
+
+    .drop-box {
+      border: 1.5px dashed var(--green);
+      background: var(--green-soft);
+      color: var(--green-dark);
+      border-radius: 6px;
+      padding: 10px;
+      text-align: center;
       font-size: 12px;
-      color: var(--muted);
+      cursor: pointer;
     }
 
-    .sheet-wrap {
-      max-width: 1020px;
-      margin: 0 auto 30px;
-      padding: 0 14px;
-    }
-
-    .sheet {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 18px 22px;
-      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
-    }
-
-    .report-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      border-bottom: 2px solid var(--ink);
-      padding-bottom: 8px;
-      margin-bottom: 10px;
-      gap: 12px;
-    }
-
-    .report-title {
-      font-size: 16px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-    }
-
-    .report-sub {
+    .status {
+      max-width: 980px;
+      margin: 0 auto 8px;
+      padding: 0 12px;
       font-size: 11px;
       color: var(--muted);
-      margin-top: 2px;
     }
 
-    .meta-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
+    .page-container {
+      max-width: 980px;
+      margin: 0 auto 24px;
+      padding: 0 12px;
+    }
+
+    .report-page {
+      background: var(--white);
+      border: 2px solid var(--green);
       border-radius: 6px;
-      padding: 8px 10px;
+      padding: 14px 18px;
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--green);
+      color: var(--white);
+      padding: 8px 12px;
+      border-radius: 4px;
       margin-bottom: 10px;
-      font-size: 11.5px;
     }
 
-    .meta-item .lbl {
-      font-size: 9.5px;
+    .header-bar h2 {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
       text-transform: uppercase;
-      color: var(--muted);
-      font-weight: 700;
-      letter-spacing: 0.03em;
     }
 
-    .meta-item .val {
-      font-weight: 700;
-      color: var(--ink);
-      margin-top: 1px;
+    .header-bar span {
+      font-size: 11px;
+      font-weight: 600;
     }
 
-    .kpi-row {
+    .info-strip {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-bottom: 11px;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
     }
 
-    .kpi {
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      padding: 7px 10px;
-      background: #fff;
+    .info-card {
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 6px 8px;
+      background: var(--white);
     }
 
-    .kpi .k-lbl {
-      font-size: 9.5px;
+    .info-card.alert {
+      border-color: var(--red-border);
+      background: var(--red-soft);
+    }
+
+    .info-card.good {
+      border-color: var(--green-border);
+      background: var(--green-soft);
+    }
+
+    .info-card .k {
+      font-size: 9px;
+      font-weight: 700;
       text-transform: uppercase;
       color: var(--muted);
-      font-weight: 700;
     }
 
-    .kpi .k-val {
-      font-size: 15px;
+    .info-card .v {
+      font-size: 13px;
       font-weight: 800;
       margin-top: 1px;
     }
 
-    .kpi.danger .k-val { color: var(--danger); }
-    .kpi.warn .k-val { color: var(--warn); }
-    .kpi.ok .k-val { color: var(--ok); }
+    .info-card.alert .v { color: var(--red); }
+    .info-card.good .v { color: var(--green); }
 
     table {
       width: 100%;
@@ -238,73 +194,59 @@
     }
 
     thead th {
-      background: #0f172a;
-      color: #ffffff;
+      background: var(--green);
+      color: var(--white);
+      border: 1px solid var(--green-dark);
+      padding: 5px 7px;
       text-align: left;
-      padding: 6px 8px;
-      font-weight: 700;
       font-size: 10px;
       text-transform: uppercase;
-      letter-spacing: 0.03em;
-      border: 1px solid #0f172a;
     }
 
-    thead th.num, tbody td.num {
+    thead th.center, tbody td.center {
       text-align: center;
       white-space: nowrap;
     }
 
     tbody td {
-      padding: 5px 8px;
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--line);
+      padding: 4px 7px;
       vertical-align: top;
+      background: var(--white);
     }
 
-    tbody tr:nth-child(even) td {
-      background: #f8fafc;
+    tbody tr.has-penalty td {
+      background: var(--red-soft);
     }
 
-    .area-name {
+    .area-col {
       font-weight: 700;
-      color: var(--ink);
       white-space: nowrap;
     }
 
-    .badge {
-      display: inline-block;
-      padding: 1px 6px;
-      border-radius: 4px;
-      font-size: 9.5px;
-      font-weight: 700;
-      margin-right: 5px;
-      text-transform: uppercase;
+    .pct-bad {
+      color: var(--red);
+      font-weight: 800;
     }
 
-    .badge-pen {
-      background: var(--danger-bg);
-      color: var(--danger);
-      border: 1px solid #fecaca;
+    .pct-ok {
+      color: var(--green);
+      font-weight: 800;
     }
 
-    .badge-nota {
-      background: var(--warn-bg);
-      color: var(--warn);
-      border: 1px solid #fde68a;
+    .obs-item {
+      min-height: 14px;
+      margin-bottom: 2px;
     }
 
-    .finding-line {
-      min-height: 16px;
-      margin-bottom: 3px;
-    }
-
-    .finding-line:last-child {
+    .obs-item:last-child {
       margin-bottom: 0;
     }
 
-    .footer-note {
-      margin-top: 9px;
-      padding-top: 6px;
-      border-top: 1px solid #e2e8f0;
+    .page-foot {
+      margin-top: 8px;
+      padding-top: 5px;
+      border-top: 1px solid var(--green);
       display: flex;
       justify-content: space-between;
       font-size: 10px;
@@ -314,179 +256,146 @@
     @media print {
       @page {
         size: letter portrait;
-        margin: 7mm;
+        margin: 6mm;
       }
 
       body {
-        background: #fff;
-        font-size: 10.5px;
+        font-size: 9.5px;
       }
 
-      .toolbar, .dropzone, .status-msg {
+      .toolbar, .dropzone, .status {
         display: none !important;
       }
 
-      .sheet-wrap {
+      .page-container {
         max-width: 100%;
         margin: 0;
         padding: 0;
       }
 
-      .sheet {
-        border: none;
-        box-shadow: none;
-        padding: 0;
-        border-radius: 0;
+      .report-page {
+        border: 1.5px solid var(--green);
+        padding: 8px 10px;
       }
 
-      .report-top {
-        padding-bottom: 5px;
-        margin-bottom: 7px;
-      }
-
-      .report-title {
-        font-size: 13.5px;
-      }
-
-      .meta-grid, .kpi-row {
-        gap: 6px;
-        margin-bottom: 7px;
-      }
-
-      .meta-grid {
+      .header-bar {
         padding: 5px 8px;
+        margin-bottom: 6px;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
 
-      .kpi {
-        padding: 5px 8px;
+      .header-bar h2 {
+        font-size: 12px;
       }
 
-      .kpi .k-val {
-        font-size: 13px;
+      .info-strip {
+        gap: 4px;
+        margin-bottom: 6px;
+      }
+
+      .info-card {
+        padding: 4px 6px;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .info-card .v {
+        font-size: 11px;
       }
 
       thead th {
-        padding: 4px 6px;
-        font-size: 9px;
+        padding: 3px 5px;
+        font-size: 8.5px;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
 
       tbody td {
-        padding: 3.5px 6px;
-        font-size: 9.5px;
-        line-height: 1.25;
-      }
-
-      .badge {
-        font-size: 8.5px;
-        padding: 0.5px 4px;
+        padding: 2.5px 5px;
+        font-size: 9px;
+        line-height: 1.2;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
 
-      .footer-note {
-        margin-top: 6px;
-        padding-top: 4px;
-        font-size: 8.5px;
+      .page-foot {
+        margin-top: 5px;
+        padding-top: 3px;
+        font-size: 8px;
       }
     }
   </style>
 </head>
 <body>
   <div class="toolbar">
-    <div class="brand">
-      <span class="brand-dot"></span>
-      <h1>Lector de Auditoría de Imagen · Informe Condensado</h1>
-    </div>
+    <div class="toolbar-title">Lector de Auditoría de Imagen (1 Página · Verde / Rojo / Blanco)</div>
     <div class="actions">
-      <label class="upload-btn" for="pdfInput">
-        Subir PDF de Auditoría
-      </label>
-      <input type="file" id="pdfInput" accept="application/pdf" style="display:none" />
-      <button type="button" class="secondary" id="copyBtn" disabled>Copiar para WhatsApp</button>
-      <button type="button" id="printBtn" disabled>Guardar / Imprimir (1 Pág)</button>
+      <label class="upload-label" for="pdfFile">Subir PDF Original</label>
+      <input type="file" id="pdfFile" accept="application/pdf" style="display:none" />
+      <button type="button" class="btn-white" id="btnCopy" disabled>Copiar Resumen</button>
+      <button type="button" class="btn-red" id="btnPrint" disabled>Guardar / Imprimir PDF</button>
     </div>
   </div>
 
   <div class="dropzone">
-    <div class="drop-area" id="dropArea">
-      Arrastra aquí el PDF de Auditoría de Imagen o haz clic en <strong>Subir PDF de Auditoría</strong>.
+    <div class="drop-box" id="dropBox">
+      Arrastra aquí el PDF original de la auditoría o haz clic en <strong>Subir PDF Original</strong>.
     </div>
   </div>
 
-  <div class="status-msg" id="statusMsg">Esperando un archivo PDF...</div>
+  <div class="status" id="statusBar">Listo para cargar un PDF.</div>
 
-  <div class="sheet-wrap">
-    <div class="sheet" id="reportSheet">
-      <div class="report-top">
-        <div>
-          <div class="report-title">Informe Ejecutivo de Auditoría de Imagen</div>
-          <div class="report-sub">Área, puntaje, % alcanzado, parte evaluada y observación</div>
-        </div>
-        <div class="report-sub" id="docCode">Sin archivo cargado</div>
+  <div class="page-container">
+    <div class="report-page">
+      <div class="header-bar">
+        <h2>Informe Condensado de Auditoría de Imagen</h2>
+        <span id="fileNameLabel">Sin archivo</span>
       </div>
 
-      <div class="meta-grid">
-        <div class="meta-item">
-          <div class="lbl">Estación</div>
-          <div class="val" id="metaStation">—</div>
+      <div class="info-strip">
+        <div class="info-card">
+          <div class="k">Estación</div>
+          <div class="v" id="valStation">—</div>
         </div>
-        <div class="meta-item">
-          <div class="lbl">Período</div>
-          <div class="val" id="metaPeriod">—</div>
+        <div class="info-card">
+          <div class="k">Período</div>
+          <div class="v" id="valPeriod">—</div>
         </div>
-        <div class="meta-item">
-          <div class="lbl">Puntaje Global</div>
-          <div class="val" id="metaScore">—</div>
+        <div class="info-card good">
+          <div class="k">% Alcanzado</div>
+          <div class="v" id="valPct">—</div>
         </div>
-        <div class="meta-item">
-          <div class="lbl">Encargado / Cliente</div>
-          <div class="val" id="metaClient">—</div>
+        <div class="info-card">
+          <div class="k">Puntaje</div>
+          <div class="v" id="valScore">—</div>
         </div>
-      </div>
-
-      <div class="kpi-row">
-        <div class="kpi ok">
-          <div class="k-lbl">% Cumplimiento</div>
-          <div class="k-val" id="kpiPct">—</div>
-        </div>
-        <div class="kpi">
-          <div class="k-lbl">Áreas al 100%</div>
-          <div class="k-val" id="kpiFull">—</div>
-        </div>
-        <div class="kpi danger">
-          <div class="k-lbl">Penalizaciones ("No")</div>
-          <div class="k-val" id="kpiPen">—</div>
-        </div>
-        <div class="kpi warn">
-          <div class="k-lbl">Observaciones Escritas</div>
-          <div class="k-val" id="kpiNotes">—</div>
+        <div class="info-card alert">
+          <div class="k">Penalizaciones ("No")</div>
+          <div class="v" id="valPenalties">—</div>
         </div>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th style="width: 18%">Área</th>
-            <th class="num" style="width: 8%">Puntaje</th>
-            <th class="num" style="width: 9%">% Alcanzado</th>
-            <th style="width: 22%">Parte Evaluada</th>
-            <th style="width: 43%">Observación</th>
+            <th style="width: 19%">Área</th>
+            <th class="center" style="width: 9%">Puntaje</th>
+            <th class="center" style="width: 10%">% Alcanzado</th>
+            <th style="width: 24%">Parte Evaluada</th>
+            <th style="width: 38%">Observaciones</th>
           </tr>
         </thead>
-        <tbody id="tableBody">
+        <tbody id="reportBody">
           <tr>
-            <td colspan="5" style="text-align:center; color:#64748b; padding:18px;">
-              Sube un PDF de auditoría para generar el informe condensado.
-            </td>
+            <td colspan="5" class="center" style="padding: 14px;">Sube el PDF original para generar el informe en una página.</td>
           </tr>
         </tbody>
       </table>
 
-      <div class="footer-note">
-        <span>Generado automáticamente desde reporte oficial de auditoría de imagen</span>
-        <span id="footerTimestamp"></span>
+      <div class="page-foot">
+        <span id="valClient">Encargado: —</span>
+        <span id="valDate"></span>
       </div>
     </div>
   </div>
@@ -496,29 +405,29 @@
       "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
     const AREAS = [
-      { key: "Acercamiento Inicial", label: "Acercamiento Inicial" },
-      { key: "MID", label: "MID" },
-      { key: "Canopy", label: "Canopy" },
-      { key: "Pista", label: "Pista" },
-      { key: "Área de Surtidores", label: "Área de Surtidores" },
-      { key: "Letreros y Alrededor Externo", label: "Letreros y Alrededor Externo" },
-      { key: "Baños", label: "Baños" },
-      { key: "Tienda", label: "Tienda" },
-      { key: "Uniformes", label: "Uniformes" },
-      { key: "Otras Áreas Comunes", label: "Otras Áreas Comunes" }
+      "Acercamiento Inicial",
+      "MID",
+      "Canopy",
+      "Pista",
+      "Área de Surtidores",
+      "Letreros y Alrededor Externo",
+      "Baños",
+      "Tienda",
+      "Uniformes",
+      "Otras Áreas Comunes"
     ];
 
-    const pdfInput = document.getElementById("pdfInput");
-    const dropArea = document.getElementById("dropArea");
-    const statusMsg = document.getElementById("statusMsg");
-    const copyBtn = document.getElementById("copyBtn");
-    const printBtn = document.getElementById("printBtn");
-    const tableBody = document.getElementById("tableBody");
+    const pdfInput = document.getElementById("pdfFile");
+    const dropBox = document.getElementById("dropBox");
+    const statusBar = document.getElementById("statusBar");
+    const reportBody = document.getElementById("reportBody");
+    const btnCopy = document.getElementById("btnCopy");
+    const btnPrint = document.getElementById("btnPrint");
 
-    let lastPlainText = "";
+    let plainSummary = "";
 
-    function normalize(str) {
-      return (str || "")
+    function norm(s) {
+      return (s || "")
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
@@ -526,452 +435,311 @@
         .trim();
     }
 
-    function cleanText(str) {
-      return (str || "").replace(/\s+/g, " ").trim();
+    function clean(s) {
+      return (s || "").replace(/\s+/g, " ").trim();
     }
 
-    function isChecklistOrHeaderLine(text) {
-      const t = cleanText(text);
-      if (!t) return true;
-      if (t.includes("?")) return true;
-      if (/^observaciones\s*[-–]/i.test(t)) return true;
-      if (/^(observación|observacion|penalización|penalizacion|limpieza|funcionamiento|estado|puntaje|%|total|sí|si|no|no aplica|conforme|sin novedades ni penalizaciones\.?|sin evaluación en esta estación\.?)$/i.test(t)) {
-        return true;
-      }
-      if (/^\d+\s*\/\s*\d+$/.test(t) || /^\d{1,3}\.\d{2}$/.test(t) || /^\d{1,2}$/.test(t)) return true;
-      if (/^(se ve limpia|se encuentra libre|se encuentran libres|se encuentra en buen|se encuentran en buen|no puede haber|puede que haya|tiene disponible|cuenta con un|los elementos de|la fachada de|la entrada y|la rodadura de|la pista debajo|los dispositivos de|los elementos de|los qrs de|las isletas,|los exhibidores de|los basureros y|las mangueras de|los extinguidores se|la caseta de|los letreros se|el espacio dedicado|los jardines en|los estacionamientos de|las aceras y|el rotulo|el baño se|la musica en|la tienda se|el uniforme del|el personal de|los elementos del|la terraza y)/i.test(t)) {
-        return true;
-      }
-      return false;
-    }
-
-    async function extractPages(arrayBuffer) {
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      const pages = [];
-      for (let p = 1; p <= pdf.numPages; p++) {
-        const page = await pdf.getPage(p);
-        const viewport = page.getViewport({ scale: 1.0 });
-        const content = await page.getTextContent();
-        const items = content.items
-          .filter(it => it.str && it.str.trim() !== "")
-          .map(it => ({
-            str: it.str.trim(),
-            x: it.transform[4],
-            y: viewport.height - it.transform[5],
-            w: it.width || 0
-          }));
-        pages.push({ pageNum: p, height: viewport.height, width: viewport.width, items });
-      }
-      return pages;
-    }
-
-    function groupIntoLines(items, yTol = 4.5) {
-      const sorted = [...items].sort((a, b) => (Math.abs(a.y - b.y) <= yTol ? a.x - b.x : a.y - b.y));
-      const lines = [];
-      for (const it of sorted) {
-        let line = lines.find(l => Math.abs(l.y - it.y) <= yTol);
-        if (!line) {
-          line = { y: it.y, items: [] };
-          lines.push(line);
-        }
-        line.items.push(it);
-      }
-      for (const l of lines) {
-        l.items.sort((a, b) => a.x - b.x);
-        l.text = l.items.map(i => i.str).join(" ").replace(/\s+/g, " ").trim();
-      }
-      return lines;
-    }
-
-    function parseAuditPDF(pages) {
-      const p1Lines = groupIntoLines(pages[0]?.items || []);
-
-      let station = "—";
-      let period = "—";
-      let client = "—";
-      let totalScoreStr = "—";
-      let totalPctStr = "—";
-
-      const fullP1Text = p1Lines.map(l => l.text).join(" | ");
-      const periodMatch = fullP1Text.match(/\b(Ene|Feb|Mar|Abr|May|Jun|Jul|Ago|Sep|Oct|Nov|Dic)[\s\-–]*(?:Ene|Feb|Mar|Abr|May|Jun|Jul|Ago|Sep|Oct|Nov|Dic)?\s*20\d{2}\b/i);
-      if (periodMatch) period = periodMatch[0];
-
-      const visitaMatch = fullP1Text.match(/visita al sitio para\s+([A-Za-zÁÉÍÓÚáéíóúñÑ0-9\s\-]+?)\./i);
-      if (visitaMatch) station = visitaMatch[1].trim();
-
-      if (station === "—") {
-        for (let i = 0; i < p1Lines.length; i++) {
-          if (normalize(p1Lines[i].text) === "estacion" && p1Lines[i + 1]) {
-            station = p1Lines[i + 1].text;
-            break;
-          }
-        }
-      }
-
-      for (const page of pages) {
-        const lines = groupIntoLines(page.items);
-        for (let i = 0; i < lines.length; i++) {
-          const t = lines[i].text;
-          const m = t.match(/Nombre\s+Cliente\s*:\s*(.+)/i);
-          if (m && m[1].trim()) {
-            client = m[1].trim();
-          } else if (/^Nombre\s+Cliente\s*:?$/i.test(t) && lines[i + 1]) {
-            const nextVal = lines[i + 1].text;
-            if (!/Firma\s+Cliente/i.test(nextVal) && nextVal.length > 1) {
-              client = nextVal;
-            }
-          }
-        }
-      }
-
-      const areaSummary = {};
-      for (const a of AREAS) {
-        areaSummary[a.key] = { earned: 0, total: 0, pct: 0, hasScore: false };
-      }
-
-      for (let i = 0; i < p1Lines.length; i++) {
-        const line = p1Lines[i];
-        if (/Total\s+Auditoria/i.test(line.text)) {
-          const combined = [line.text, p1Lines[i + 1]?.text || "", p1Lines[i + 2]?.text || ""].join(" ");
-          const frac = combined.match(/(\d+)\s*\/\s*(\d+)/);
-          const pctMatch = combined.match(/\b(\d{1,3}\.\d{2})\b/);
-          if (frac) totalScoreStr = `${frac[1]}/${frac[2]}`;
-          if (pctMatch) totalPctStr = `${pctMatch[1]}%`;
-          continue;
-        }
-
-        for (const a of AREAS) {
-          const normLine = normalize(line.text);
-          const normArea = normalize(a.key);
-          if (normLine === normArea || normLine.startsWith(normArea + " ")) {
-            const windowText = [line.text, p1Lines[i + 1]?.text || "", p1Lines[i + 2]?.text || ""].join(" ");
-            const frac = windowText.match(/(\d+)\s*\/\s*(\d+)/);
-            const pct = windowText.match(/\b(\d{1,3}\.\d{2})\b/);
-            if (frac) {
-              const earned = parseInt(frac[1], 10);
-              const total = parseInt(frac[2], 10);
-              areaSummary[a.key] = {
-                earned,
-                total,
-                pct: pct ? parseFloat(pct[1]) : (total > 0 ? (earned / total) * 100 : 0),
-                hasScore: true
-              };
-            }
-          }
-        }
-      }
-
-      const findingsByArea = {};
-      for (const a of AREAS) findingsByArea[a.key] = [];
-
-      // Detectar si el PDF tiene formato original ("Observaciones - ...") o formato condensado
-      const hasOriginalObsFormat = pages.some(pg =>
-        pg.items.some(it => /^Observaciones\s*[-–]/i.test(it.str))
-      );
-
-      if (hasOriginalObsFormat) {
-        for (const page of pages) {
-          if (page.pageNum === 1) continue;
-          const lines = groupIntoLines(page.items);
-
-          const areaHeaders = [];
-          for (const l of lines) {
-            const nl = normalize(l.text);
-            const matched = AREAS.find(a => nl === normalize(a.key));
-            if (matched) areaHeaders.push({ key: matched.key, y: l.y });
-          }
-
-          const obsAnchors = [];
-          for (let idx = 0; idx < lines.length; idx++) {
-            const l = lines[idx];
-            const m = l.text.match(/^Observaciones\s*[-–]\s*(.+)$/i);
-            if (m) {
-              obsAnchors.push({
-                partName: cleanText(m[1]),
-                y: l.y,
-                x: l.items[0]?.x || 0,
-                lineIdx: idx
-              });
-            }
-          }
-
-          for (let idx = 0; idx < obsAnchors.length; idx++) {
-            const anchor = obsAnchors[idx];
-            const nextAnchorY = obsAnchors[idx + 1] ? obsAnchors[idx + 1].y - 1 : page.height - 20;
-
-            let areaForAnchor = null;
-            for (let h = areaHeaders.length - 1; h >= 0; h--) {
-              if (areaHeaders[h].y <= anchor.y + 4) {
-                areaForAnchor = areaHeaders[h].key;
-                break;
-              }
-            }
-            if (!areaForAnchor) areaForAnchor = areaHeaders[0]?.key || null;
-            if (!areaForAnchor) continue;
-
-            const prevAnchorY = idx > 0 ? obsAnchors[idx - 1].y : Math.max(30, anchor.y - 70);
-            const bandItems = page.items.filter(
-              it => it.y > prevAnchorY + 2 && it.y < anchor.y - 1
-            );
-            const hasNo = bandItems.some(it => /^(no)$/i.test(it.str.trim()));
-
-            const searchBottomY = Math.min(nextAnchorY, anchor.y + 35);
-            const belowItems = page.items.filter(
-              it => it.y > anchor.y + 1.5 && it.y <= searchBottomY
-            );
-            const belowLines = groupIntoLines(belowItems);
-
-            const obsLines = [];
-            for (const bl of belowLines) {
-              if (AREAS.some(a => normalize(a.key) === normalize(bl.text))) break;
-              if (/^observaciones\s*[-–]/i.test(bl.text)) break;
-
-              const nonAnswerItems = bl.items.filter(
-                it => !/^(sí|si|no|no aplica|limpieza|funcionamiento|estado|puntaje|%|total)$/i.test(it.str.trim())
-              );
-              const lineStr = cleanText(nonAnswerItems.map(i => i.str).join(" "));
-              if (!lineStr || isChecklistOrHeaderLine(lineStr)) continue;
-              if (nonAnswerItems.every(i => i.x < 105) && lineStr.length <= 32) continue;
-
-              obsLines.push(lineStr);
-            }
-
-            const writtenObs = cleanText(obsLines.join(" "));
-            if (hasNo || writtenObs.length > 0) {
-              findingsByArea[areaForAnchor].push({
-                part: anchor.partName,
-                isPenalty: hasNo,
-                observation: writtenObs
-              });
-            }
-          }
-        }
-      } else {
-        // Lectura cuando el PDF ya tiene la tabla resumida con columna OBSERVACIÓN / PENALIZACIÓN
-        for (const page of pages) {
-          const lines = groupIntoLines(page.items);
-          let currentArea = null;
-
-          for (let i = 0; i < lines.length; i++) {
-            const l = lines[i];
-            const matchedArea = AREAS.find(a => normalize(a.key) === normalize(l.text));
-            if (matchedArea) {
-              currentArea = matchedArea.key;
-              continue;
-            }
-            if (!currentArea) continue;
-
-            const hasPenWord = /\bPENALIZACIÓN\b|\bPENALIZACION\b/i.test(l.text);
-            const hasObsWord = /\bOBSERVACIÓN\b|\bOBSERVACION\b/i.test(l.text);
-
-            if (hasPenWord || hasObsWord) {
-              // Extraer solo el texto posterior a OBSERVACIÓN / PENALIZACIÓN en esa línea o la siguiente limpia
-              const afterMatch = l.text.split(/(?:OBSERVACI[ÓO]N|PENALIZACI[ÓO]N)/i).slice(1).join(" ");
-              const cleanObs = cleanText(
-                afterMatch
-                  .split(" ")
-                  .filter(tok => !isChecklistOrHeaderLine(tok))
-                  .join(" ")
-              );
-
-              const finalObs = isChecklistOrHeaderLine(cleanObs) ? "" : cleanObs;
-              findingsByArea[currentArea].push({
-                part: currentArea,
-                isPenalty: hasPenWord,
-                observation: finalObs
-              });
-            }
-          }
-        }
-      }
-
-      return {
-        station,
-        period,
-        client,
-        totalScoreStr,
-        totalPctStr,
-        areaSummary,
-        findingsByArea
-      };
-    }
-
-    function renderReport(data, fileName) {
-      document.getElementById("docCode").textContent = fileName || "Reporte";
-      document.getElementById("metaStation").textContent = data.station;
-      document.getElementById("metaPeriod").textContent = data.period;
-      document.getElementById("metaScore").textContent = data.totalScoreStr;
-      document.getElementById("metaClient").textContent = data.client;
-
-      const totalEarned = Object.values(data.areaSummary).reduce((acc, s) => acc + s.earned, 0);
-      const totalMax = Object.values(data.areaSummary).reduce((acc, s) => acc + s.total, 0);
-      const computedPct = totalMax > 0 ? ((totalEarned / totalMax) * 100).toFixed(2) + "%" : "0.00%";
-      const finalPct = data.totalPctStr !== "—" ? data.totalPctStr : computedPct;
-      if (data.totalScoreStr === "—" && totalMax > 0) {
-        document.getElementById("metaScore").textContent = `${totalEarned}/${totalMax}`;
-      }
-
-      let fullAreasCount = 0;
-      let applicableAreasCount = 0;
-      let penaltiesCount = 0;
-      let notesCount = 0;
-
-      for (const a of AREAS) {
-        const s = data.areaSummary[a.key];
-        if (s.total > 0) {
-          applicableAreasCount++;
-          if (s.earned === s.total) fullAreasCount++;
-        }
-        const list = data.findingsByArea[a.key] || [];
-        for (const f of list) {
-          if (f.isPenalty) penaltiesCount++;
-          if (f.observation && f.observation.length > 0) notesCount++;
-        }
-      }
-
-      document.getElementById("kpiPct").textContent = finalPct;
-      document.getElementById("kpiFull").textContent = `${fullAreasCount} de ${applicableAreasCount}`;
-      document.getElementById("kpiPen").textContent = String(penaltiesCount);
-      document.getElementById("kpiNotes").textContent = String(notesCount);
-
-      tableBody.innerHTML = "";
-      const plainLines = [
-        `*AUDITORÍA DE IMAGEN — ${data.station.toUpperCase()}*`,
-        `Período: ${data.period} | Puntaje: ${document.getElementById("metaScore").textContent} (${finalPct})`,
-        `Penalizaciones: ${penaltiesCount} | Observaciones escritas: ${notesCount}`,
-        ""
-      ];
-
-      let anyRowRendered = false;
-
-      for (const a of AREAS) {
-        const s = data.areaSummary[a.key];
-        const list = data.findingsByArea[a.key] || [];
-        if (list.length === 0) continue;
-
-        anyRowRendered = true;
-        const isNA = s.total === 0;
-        const scoreDisplay = isNA ? "0/0" : `${s.earned}/${s.total}`;
-        const pctDisplay = isNA ? "N/A" : `${s.pct.toFixed(2)}%`;
-
-        const tr = document.createElement("tr");
-
-        const tdArea = document.createElement("td");
-        tdArea.className = "area-name";
-        tdArea.textContent = a.label;
-
-        const tdScore = document.createElement("td");
-        tdScore.className = "num";
-        tdScore.textContent = scoreDisplay;
-
-        const tdPct = document.createElement("td");
-        tdPct.className = "num";
-        tdPct.style.fontWeight = "700";
-        if (!isNA && s.pct < 100) tdPct.style.color = "#b91c1c";
-        else if (!isNA && s.pct === 100) tdPct.style.color = "#15803d";
-        tdPct.textContent = pctDisplay;
-
-        const tdPart = document.createElement("td");
-        tdPart.innerHTML = list
-          .map(f => {
-            const tag = f.isPenalty
-              ? `<span class="badge badge-pen">No</span>`
-              : `<span class="badge badge-nota">Obs</span>`;
-            return `<div class="finding-line">${tag}<strong>${escapeHtml(f.part)}</strong></div>`;
-          })
-          .join("");
-
-        const tdObs = document.createElement("td");
-        tdObs.innerHTML = list
-          .map(f => `<div class="finding-line">${f.observation ? escapeHtml(f.observation) : ""}</div>`)
-          .join("");
-
-        tr.appendChild(tdArea);
-        tr.appendChild(tdScore);
-        tr.appendChild(tdPct);
-        tr.appendChild(tdPart);
-        tr.appendChild(tdObs);
-        tableBody.appendChild(tr);
-
-        const waItems = list
-          .map(f => `${f.part}${f.observation ? " (" + f.observation + ")" : ""}`)
-          .join(" | ");
-        plainLines.push(`• *${a.label}* (${scoreDisplay} | ${pctDisplay}): ${waItems}`);
-      }
-
-      if (!anyRowRendered) {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="5" style="text-align:center; padding:12px;">Sin penalizaciones ni observaciones escritas.</td>`;
-        tableBody.appendChild(tr);
-        plainLines.push("Sin penalizaciones ni observaciones escritas.");
-      }
-
-      lastPlainText = plainLines.join("\n");
-      copyBtn.disabled = false;
-      printBtn.disabled = false;
-      document.getElementById("footerTimestamp").textContent =
-        "Procesado el " + new Date().toLocaleString("es-PA");
-    }
-
-    function escapeHtml(str) {
-      return (str || "")
+    function esc(s) {
+      return (s || "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
     }
 
-    async function handleFile(file) {
+    function isIgnoredTokenOrLine(txt) {
+      const t = clean(txt);
+      if (!t) return true;
+      if (t.includes("?")) return true;
+      if (/^observaciones\s*[-–]/i.test(t)) return true;
+      // Excluir valores o encabezados de Limpieza, Funcionamiento, Estado, Puntaje, %
+      if (/^(sí|si|no|no aplica|limpieza|funcionamiento|estado|puntaje|%|total)$/i.test(t)) return true;
+      if (/^\d+\s*\/\s*\d+$/.test(t) || /^\d{1,3}\.\d{2}$/.test(t) || /^\d{1,2}$/.test(t)) return true;
+      return false;
+    }
+
+    async function readPdf(buffer) {
+      const doc = await pdfjsLib.getDocument({ data: buffer }).promise;
+      const pages = [];
+      for (let i = 1; i <= doc.numPages; i++) {
+        const page = await doc.getPage(i);
+        const vp = page.getViewport({ scale: 1.0 });
+        const tc = await page.getTextContent();
+        const items = tc.items
+          .filter(it => it.str && it.str.trim() !== "")
+          .map(it => ({
+            str: it.str.trim(),
+            x: it.transform[4],
+            y: vp.height - it.transform[5],
+            w: it.width || 0
+          }));
+        pages.push({ pageNum: i, height: vp.height, items });
+      }
+      return pages;
+    }
+
+    function toLines(items, tol = 4.5) {
+      const sorted = [...items].sort((a, b) => (Math.abs(a.y - b.y) <= tol ? a.x - b.x : a.y - b.y));
+      const lines = [];
+      for (const it of sorted) {
+        let row = lines.find(r => Math.abs(r.y - it.y) <= tol);
+        if (!row) {
+          row = { y: it.y, items: [] };
+          lines.push(row);
+        }
+        row.items.push(it);
+      }
+      for (const r of lines) {
+        r.items.sort((a, b) => a.x - b.x);
+        r.text = clean(r.items.map(i => i.str).join(" "));
+      }
+      return lines;
+    }
+
+    function parseAudit(pages) {
+      const p1Lines = toLines(pages[0]?.items || []);
+      const p1Text = p1Lines.map(l => l.text).join(" | ");
+
+      let station = "—";
+      let period = "—";
+      let client = "—";
+      let totalScore = "—";
+      let totalPct = "—";
+
+      const mPeriod = p1Text.match(/\b(Ene|Feb|Mar|Abr|May|Jun|Jul|Ago|Sep|Oct|Nov|Dic)[\s\-–]*(?:Ene|Feb|Mar|Abr|May|Jun|Jul|Ago|Sep|Oct|Nov|Dic)?\s*20\d{2}\b/i);
+      if (mPeriod) period = mPeriod[0];
+
+      const mStation = p1Text.match(/visita al sitio para\s+([A-Za-zÁÉÍÓÚáéíóúñÑ0-9\s\-]+?)\./i);
+      if (mStation) station = mStation[1].trim();
+
+      for (const pg of pages) {
+        const lines = toLines(pg.items);
+        for (const l of lines) {
+          const mc = l.text.match(/Nombre\s+Cliente\s*:\s*(.+)/i);
+          if (mc && mc[1].trim()) client = mc[1].trim();
+        }
+      }
+
+      const scores = {};
+      for (const a of AREAS) scores[a] = { earned: 0, total: 0, pct: 0 };
+
+      for (let i = 0; i < p1Lines.length; i++) {
+        const line = p1Lines[i];
+        const win = [line.text, p1Lines[i + 1]?.text || "", p1Lines[i + 2]?.text || ""].join(" ");
+        if (/Total\s+Auditoria/i.test(line.text)) {
+          const f = win.match(/(\d+)\s*\/\s*(\d+)/);
+          const p = win.match(/\b(\d{1,3}\.\d{2})\b/);
+          if (f) totalScore = `${f[1]}/${f[2]}`;
+          if (p) totalPct = `${p[1]}%`;
+          continue;
+        }
+        for (const a of AREAS) {
+          if (norm(line.text) === norm(a) || norm(line.text).startsWith(norm(a) + " ")) {
+            const f = win.match(/(\d+)\s*\/\s*(\d+)/);
+            const p = win.match(/\b(\d{1,3}\.\d{2})\b/);
+            if (f) {
+              scores[a] = {
+                earned: parseInt(f[1], 10),
+                total: parseInt(f[2], 10),
+                pct: p ? parseFloat(p[1]) : 0
+              };
+            }
+          }
+        }
+      }
+
+      const rowsByArea = {};
+      for (const a of AREAS) rowsByArea[a] = [];
+
+      for (const pg of pages) {
+        if (pg.pageNum === 1) continue;
+        const lines = toLines(pg.items);
+
+        const areaMarkers = [];
+        for (const l of lines) {
+          const found = AREAS.find(a => norm(a) === norm(l.text));
+          if (found) areaMarkers.push({ area: found, y: l.y });
+        }
+
+        const obsLines = [];
+        for (let idx = 0; idx < lines.length; idx++) {
+          const m = lines[idx].text.match(/^Observaciones\s*[-–]\s*(.+)$/i);
+          if (m) {
+            obsLines.push({
+              part: clean(m[1]),
+              y: lines[idx].y,
+              x: lines[idx].items[0]?.x || 0
+            });
+          }
+        }
+
+        for (let idx = 0; idx < obsLines.length; idx++) {
+          const cur = obsLines[idx];
+          const nextY = obsLines[idx + 1] ? obsLines[idx + 1].y - 1 : pg.height - 20;
+          const prevY = idx > 0 ? obsLines[idx - 1].y : Math.max(25, cur.y - 70);
+
+          let area = null;
+          for (let m = areaMarkers.length - 1; m >= 0; m--) {
+            if (areaMarkers[m].y <= cur.y + 4) {
+              area = areaMarkers[m].area;
+              break;
+            }
+          }
+          if (!area) area = areaMarkers[0]?.area || null;
+          if (!area) continue;
+
+          // Verificar si hubo "No" en la evaluación de esta parte
+          const evalItems = pg.items.filter(it => it.y > prevY + 1 && it.y < cur.y - 1);
+          const hasPenalty = evalItems.some(it => /^no$/i.test(it.str.trim()));
+
+          // Extraer solo el texto escrito en la celda de observación (debajo de "Observaciones - ...")
+          const obsBand = pg.items.filter(
+            it => it.y > cur.y + 1.5 && it.y <= Math.min(nextY, cur.y + 32)
+          );
+          const bandRows = toLines(obsBand);
+
+          const extracted = [];
+          for (const br of bandRows) {
+            if (AREAS.some(a => norm(a) === norm(br.text))) break;
+            if (/^observaciones\s*[-–]/i.test(br.text)) break;
+
+            const filtered = br.items
+              .filter(it => !isIgnoredTokenOrLine(it.str))
+              .map(it => it.str);
+            const joined = clean(filtered.join(" "));
+            if (!joined || isIgnoredTokenOrLine(joined)) continue;
+
+            // Ignorar nombres cortos de la siguiente parte evaluada en la columna izquierda
+            if (br.items.every(it => it.x < 105) && joined.length <= 32) continue;
+
+            // Ignorar frases largas del cuestionario
+            if (/^(la |las |el |los |se ve |se encuentra |se encuentran |no puede |puede que |tiene disponible|cuenta con )/i.test(joined) && joined.length > 42) {
+              continue;
+            }
+
+            extracted.push(joined);
+          }
+
+          const observation = clean(extracted.join(" "));
+
+          if (hasPenalty || observation.length > 0) {
+            rowsByArea[area].push({
+              part: cur.part,
+              penalty: hasPenalty,
+              observation // Queda en blanco "" si no hay observación escrita
+            });
+          }
+        }
+      }
+
+      return { station, period, client, totalScore, totalPct, scores, rowsByArea };
+    }
+
+    function render(data, fileName) {
+      document.getElementById("fileNameLabel").textContent = fileName || "Reporte";
+      document.getElementById("valStation").textContent = data.station;
+      document.getElementById("valPeriod").textContent = data.period;
+      document.getElementById("valPct").textContent = data.totalPct;
+      document.getElementById("valScore").textContent = data.totalScore;
+      document.getElementById("valClient").textContent = `Encargado: ${data.client}`;
+      document.getElementById("valDate").textContent = new Date().toLocaleDateString("es-PA");
+
+      let penaltyCount = 0;
+      for (const a of AREAS) {
+        for (const item of data.rowsByArea[a] || []) {
+          if (item.penalty) penaltyCount++;
+        }
+      }
+      document.getElementById("valPenalties").textContent = String(penaltyCount);
+
+      reportBody.innerHTML = "";
+      const summaryLines = [
+        `*INFORME CONDENSADO — ${data.station.toUpperCase()}*`,
+        `Período: ${data.period} | Puntaje: ${data.totalScore} (${data.totalPct}) | Penalizaciones: ${penaltyCount}`,
+        ""
+      ];
+
+      let addedRows = 0;
+
+      for (const a of AREAS) {
+        const sc = data.scores[a];
+        const items = data.rowsByArea[a] || [];
+        if (items.length === 0) continue;
+
+        addedRows++;
+        const rowHasPen = items.some(x => x.penalty);
+        const tr = document.createElement("tr");
+        if (rowHasPen) tr.className = "has-penalty";
+
+        const pctClass = sc.total > 0 && sc.pct < 100 ? "pct-bad" : "pct-ok";
+        const pctStr = sc.total > 0 ? `${sc.pct.toFixed(2)}%` : "0.00%";
+
+        tr.innerHTML = `
+          <td class="area-col">${esc(a)}</td>
+          <td class="center">${sc.earned}/${sc.total}</td>
+          <td class="center ${pctClass}">${pctStr}</td>
+          <td>${items.map(x => `<div class="obs-item">${esc(x.part)}</div>`).join("")}</td>
+          <td>${items.map(x => `<div class="obs-item">${x.observation ? esc(x.observation) : ""}</div>`).join("")}</td>
+        `;
+        reportBody.appendChild(tr);
+
+        const detail = items
+          .map(x => `${x.part}${x.observation ? ": " + x.observation : ""}`)
+          .join(" | ");
+        summaryLines.push(`• *${a}* (${sc.earned}/${sc.total} · ${pctStr}): ${detail}`);
+      }
+
+      if (addedRows === 0) {
+        reportBody.innerHTML = `<tr><td colspan="5" class="center" style="padding:12px;">Sin observaciones ni penalizaciones registradas.</td></tr>`;
+        summaryLines.push("Sin observaciones ni penalizaciones registradas.");
+      }
+
+      plainSummary = summaryLines.join("\n");
+      btnCopy.disabled = false;
+      btnPrint.disabled = false;
+    }
+
+    async function processFile(file) {
       if (!file || file.type !== "application/pdf") {
-        statusMsg.textContent = "Por favor selecciona un archivo PDF válido.";
+        statusBar.textContent = "Selecciona un archivo PDF válido.";
         return;
       }
-      statusMsg.textContent = `Procesando "${file.name}"...`;
+      statusBar.textContent = `Leyendo "${file.name}"...`;
       try {
-        const buffer = await file.arrayBuffer();
-        const pages = await extractPages(buffer);
-        const parsed = parseAuditPDF(pages);
-        renderReport(parsed, file.name);
-        statusMsg.textContent = `Listo: informe generado para "${parsed.station}" (${pages.length} páginas analizadas).`;
-      } catch (err) {
-        console.error(err);
-        statusMsg.textContent = "Error al leer el PDF. Verifica que el archivo no esté protegido o dañado.";
+        const buf = await file.arrayBuffer();
+        const pages = await readPdf(buf);
+        const parsed = parseAudit(pages);
+        render(parsed, file.name);
+        statusBar.textContent = `Generado en 1 página para "${parsed.station}".`;
+      } catch (e) {
+        console.error(e);
+        statusBar.textContent = "No se pudo procesar el PDF.";
       }
     }
 
     pdfInput.addEventListener("change", e => {
-      if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+      if (e.target.files?.[0]) processFile(e.target.files[0]);
     });
 
-    dropArea.addEventListener("click", () => pdfInput.click());
-    dropArea.addEventListener("dragover", e => {
+    dropBox.addEventListener("click", () => pdfInput.click());
+    dropBox.addEventListener("dragover", e => { e.preventDefault(); });
+    dropBox.addEventListener("drop", e => {
       e.preventDefault();
-      dropArea.classList.add("dragover");
-    });
-    dropArea.addEventListener("dragleave", () => dropArea.classList.remove("dragover"));
-    dropArea.addEventListener("drop", e => {
-      e.preventDefault();
-      dropArea.classList.remove("dragover");
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        handleFile(e.dataTransfer.files[0]);
-      }
+      if (e.dataTransfer.files?.[0]) processFile(e.dataTransfer.files[0]);
     });
 
-    copyBtn.addEventListener("click", async () => {
-      if (!lastPlainText) return;
+    btnCopy.addEventListener("click", async () => {
+      if (!plainSummary) return;
       try {
-        await navigator.clipboard.writeText(lastPlainText);
-        const prev = copyBtn.textContent;
-        copyBtn.textContent = "¡Copiado!";
-        setTimeout(() => (copyBtn.textContent = prev), 1600);
+        await navigator.clipboard.writeText(plainSummary);
+        btnCopy.textContent = "¡Copiado!";
+        setTimeout(() => (btnCopy.textContent = "Copiar Resumen"), 1500);
       } catch {
-        statusMsg.textContent = "No se pudo copiar automáticamente al portapapeles.";
+        statusBar.textContent = "No se pudo copiar al portapapeles.";
       }
     });
 
-    printBtn.addEventListener("click", () => {
-      window.print();
-    });
+    btnPrint.addEventListener("click", () => window.print());
   </script>
 </body>
 </html>
