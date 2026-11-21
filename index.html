@@ -1,0 +1,1086 @@
+html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lector de Auditoría de Imagen · Puma Energy</title>
+  <!-- Tailwind CSS desde CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- PDF.js desde CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- Fuente Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+
+    /* Estilos de hoja tamaño Carta para vista previa e impresión */
+    .report-sheet {
+      width: 100%;
+      max-width: 816px; /* ~8.5in a 96dpi */
+      min-height: 1056px; /* ~11in a 96dpi */
+      background: #ffffff;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      margin: 0 auto;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Resaltado sutil cuando el modo edición está activo */
+    .editing-active [contenteditable="true"] {
+      outline: 1.5px dashed #3b82f6;
+      background-color: #eff6ff;
+      border-radius: 3px;
+      padding: 1px 4px;
+      transition: all 0.15s ease;
+    }
+    .editing-active [contenteditable="true"]:focus {
+      outline: 2px solid #2563eb;
+      background-color: #ffffff;
+    }
+
+    /* Configuración exacta de impresión en 1 sola página tamaño Carta */
+    @page {
+      size: letter portrait;
+      margin: 0.4in;
+    }
+
+    @media print {
+      body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .print-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+      }
+
+      .report-sheet {
+        box-shadow: none !important;
+        border: none !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        min-height: auto !important;
+        height: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        page-break-after: avoid;
+        break-after: avoid;
+      }
+
+      /* Quitar bordes de edición al imprimir */
+      .editing-active [contenteditable="true"] {
+        outline: none !important;
+        background-color: transparent !important;
+        padding: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- BARRA DE NAVEGACIÓN SUPERIOR (Oculta al imprimir) -->
+  <header class="no-print bg-slate-900 text-white border-b-4 border-[#E30613] sticky top-0 z-30 shadow-md">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <!-- Emblema corporativo geométrico -->
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#E30613] to-[#b9050f] flex items-center justify-center font-extrabold text-white text-lg shadow">
+          P
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-[#00a84f]">Puma Energy</span>
+            <span class="text-slate-500 text-xs">•</span>
+            <span class="text-xs text-slate-300">Procesamiento Local 100% Seguro</span>
+          </div>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Condensador de Auditorías de Imagen</h1>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="btnLoadSampleTop" type="button" class="px-3 py-1.5 text-xs sm:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition cursor-pointer">
+          Probar Ejemplo (Penonomé)
+        </button>
+        <label for="fileInputTop" class="px-3.5 py-1.5 text-xs sm:text-sm font-semibold bg-[#00843D] hover:bg-[#006e33] text-white rounded-lg shadow transition cursor-pointer flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          <span>Subir PDF</span>
+        </label>
+        <input id="fileInputTop" type="file" accept="application/pdf" class="hidden">
+      </div>
+    </div>
+  </header>
+
+  <!-- NOTIFICACIÓN FLOTANTE (Toast) -->
+  <div id="toast" class="no-print fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div id="toastContent" class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 flex items-center gap-2.5 text-sm font-medium">
+      <span id="toastIcon">✅</span>
+      <span id="toastMessage">Mensaje</span>
+    </div>
+  </div>
+
+  <!-- ZONA PRINCIPAL -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+
+    <!-- PANTALLA DE CARGA INICIAL (Drag & Drop) -->
+    <section id="uploadSection" class="no-print max-w-2xl mx-auto my-6">
+      <div id="dropZone" class="bg-white border-2 border-dashed border-slate-300 hover:border-[#00843D] rounded-2xl p-8 sm:p-12 text-center transition-all cursor-pointer shadow-sm group">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-emerald-50 text-[#00843D] group-hover:scale-105 transition-transform flex items-center justify-center">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+        <h2 class="text-xl font-bold text-slate-900 mb-2">Arrastra aquí el PDF de Auditoría de Imagen</h2>
+        <p class="text-sm text-slate-500 max-w-md mx-auto mb-6">
+          Convierte automáticamente el reporte extenso de 9 páginas en un resumen ejecutivo de 1 hoja con puntajes, penalizaciones y observaciones clave.
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <label for="fileInputMain" class="w-full sm:w-auto px-5 py-2.5 bg-[#E30613] hover:bg-[#c20510] text-white font-semibold text-sm rounded-xl shadow-sm transition cursor-pointer inline-flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            Seleccionar archivo PDF
+          </label>
+          <input id="fileInputMain" type="file" accept="application/pdf" class="hidden">
+
+          <button id="btnLoadSampleMain" type="button" class="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-sm rounded-xl transition cursor-pointer">
+            Cargar Ejemplo (Penonomé Nov-Dic 2026)
+          </button>
+        </div>
+
+        <div class="mt-6 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
+          <span class="flex items-center gap-1">🔒 100% Privado (se procesa en tu navegador)</span>
+          <span class="flex items-center gap-1">⚡ Detecta respuestas "No" y notas ocultas</span>
+          <span class="flex items-center gap-1">📄 Exportable a PDF de 1 página</span>
+        </div>
+      </div>
+
+      <!-- Indicador de carga -->
+      <div id="loadingIndicator" class="hidden mt-6 bg-white rounded-xl p-6 text-center shadow-sm border border-slate-200">
+        <div class="inline-block w-8 h-8 border-4 border-[#00843D] border-t-transparent rounded-full animate-spin mb-2"></div>
+        <p class="text-sm font-semibold text-slate-800">Analizando estructura y extrayendo observaciones del PDF...</p>
+        <p class="text-xs text-slate-500 mt-1">Ordenando bloques de texto por coordenadas en las 9 páginas</p>
+      </div>
+
+      <!-- Alerta de error -->
+      <div id="errorBox" class="hidden mt-6 bg-red-50 border border-red-200 text-red-800 rounded-xl p-4 text-sm">
+        <div class="font-bold flex items-center gap-2 mb-1">
+          <span>⚠️ No se pudo procesar el archivo</span>
+        </div>
+        <p id="errorText" class="text-red-700"></p>
+      </div>
+    </section>
+
+    <!-- VISTA DEL INFORME GENERADO -->
+    <section id="reportWorkspace" class="hidden">
+
+      <!-- BARRA DE HERRAMIENTAS DE ACCIÓN (Oculta al imprimir) -->
+      <div class="no-print bg-white rounded-xl p-3.5 mb-5 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <button id="btnReset" type="button" class="px-3 py-2 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition cursor-pointer flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Cargar otro PDF
+          </button>
+          <span class="text-slate-300">|</span>
+          <button id="btnToggleEdit" type="button" class="px-3 py-2 text-xs sm:text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition cursor-pointer flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            <span id="editBtnLabel">Editar texto manualmente</span>
+          </button>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btnCopyWhatsApp" type="button" class="px-3.5 py-2 text-xs sm:text-sm font-semibold bg-[#25D366] hover:bg-[#1ebe5d] text-white rounded-lg shadow-sm transition cursor-pointer flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824z"/></svg>
+            <span>Copiar para WhatsApp</span>
+          </button>
+
+          <button id="btnPrintPDF" type="button" class="px-4 py-2 text-xs sm:text-sm font-semibold bg-[#E30613] hover:bg-[#c20510] text-white rounded-lg shadow-sm transition cursor-pointer flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            <span>Descargar / Imprimir PDF (1 Página)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- AVISO DE MODO EDICIÓN -->
+      <div id="editBanner" class="no-print hidden bg-blue-50 border border-blue-200 text-blue-800 px-4 py-2.5 rounded-xl mb-4 text-xs sm:text-sm flex items-center justify-between">
+        <span>✏️ <strong>Modo Edición Activo:</strong> Haz clic sobre cualquier texto, porcentaje u observación dentro de la hoja para ajustarlo antes de imprimir o copiar.</span>
+        <button id="btnCloseEditBanner" type="button" class="text-blue-700 font-bold underline ml-3 cursor-pointer">Listo</button>
+      </div>
+
+      <!-- HOJA EJECUTIVA DE 1 PÁGINA (Área imprimible) -->
+      <div class="print-container">
+        <article id="reportSheet" class="report-sheet rounded-xl p-6 sm:p-10 border border-slate-200">
+          
+          <div>
+            <!-- ENCABEZADO CORPORATIVO -->
+            <header class="border-b-4 border-[#E30613] pb-4 mb-5 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+              <div>
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="inline-block w-2.5 h-2.5 rounded-full bg-[#00843D]"></span>
+                  <span class="text-xs font-extrabold uppercase tracking-widest text-[#00843D]">Puma Energy · Control de Estándares de Sitio</span>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">INFORME EJECUTIVO DE AUDITORÍA DE IMAGEN</h2>
+              </div>
+
+              <div class="text-left sm:text-right bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                <span class="block text-[10px] uppercase tracking-wider font-semibold text-slate-500">Referencia de Reporte</span>
+                <span id="repRef" class="text-xs sm:text-sm font-bold text-slate-800">RSS-0001269</span>
+              </div>
+            </header>
+
+            <!-- TARJETA DE METADATOS Y NOTA GLOBAL -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+              <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Estación</span>
+                <span id="repStation" class="text-sm sm:text-base font-extrabold text-slate-900 block">Penonomé</span>
+              </div>
+              <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Período Evaluado</span>
+                <span id="repPeriod" class="text-sm sm:text-base font-bold text-slate-900 block">Nov-Dic 2026</span>
+              </div>
+              <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Cliente / Encargado</span>
+                <span id="repClient" class="text-sm sm:text-base font-bold text-slate-900 block">Omar Quintanilla</span>
+              </div>
+              <div id="repScoreBox" class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                <span class="block text-[10px] font-bold uppercase tracking-wider text-[#00843D] mb-0.5">Nota Final Alcanzada</span>
+                <div class="flex items-baseline gap-1.5">
+                  <span id="repTotalPct" class="text-lg sm:text-xl font-extrabold text-[#00843D]">96.81%</span>
+                  <span id="repTotalScore" class="text-xs font-semibold text-emerald-700">(91/94)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- INDICADORES KPI RÁPIDOS -->
+            <div class="grid grid-cols-3 gap-3 mb-5">
+              <div class="border border-slate-200 rounded-lg px-3.5 py-2 flex items-center justify-between bg-white">
+                <div>
+                  <span class="block text-[10px] font-semibold uppercase text-slate-500">Áreas al 100%</span>
+                  <span id="kpiPerfectAreas" class="text-base font-extrabold text-[#00843D]">8 de 9</span>
+                </div>
+                <span class="w-7 h-7 rounded-full bg-emerald-50 text-[#00843D] flex items-center justify-center text-xs font-bold">✓</span>
+              </div>
+              <div class="border border-slate-200 rounded-lg px-3.5 py-2 flex items-center justify-between bg-white">
+                <div>
+                  <span class="block text-[10px] font-semibold uppercase text-slate-500">Penalizaciones ("No")</span>
+                  <span id="kpiPenalties" class="text-base font-extrabold text-[#E30613]">1</span>
+                </div>
+                <span class="w-7 h-7 rounded-full bg-red-50 text-[#E30613] flex items-center justify-center text-xs font-bold">!</span>
+              </div>
+              <div class="border border-slate-200 rounded-lg px-3.5 py-2 flex items-center justify-between bg-white">
+                <div>
+                  <span class="block text-[10px] font-semibold uppercase text-slate-500">Notas Preventivas</span>
+                  <span id="kpiWarnings" class="text-base font-extrabold text-amber-600">2</span>
+                </div>
+                <span class="w-7 h-7 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xs font-bold">⚑</span>
+              </div>
+            </div>
+
+            <!-- TÍTULO DE TABLA -->
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-slate-800 border-l-4 border-[#00843D] pl-2.5">
+                Desglose por Área y Hallazgos Detectados
+              </h3>
+              <span class="text-[11px] text-slate-500">Se muestran únicamente partes con observación o penalización</span>
+            </div>
+
+            <!-- TABLA CONDENSADA DE RESULTADOS -->
+            <div class="overflow-hidden border border-slate-300 rounded-lg mb-5">
+              <table class="w-full border-collapse text-left text-xs">
+                <thead>
+                  <tr class="bg-slate-900 text-white">
+                    <th class="py-2 px-2.5 font-semibold w-[22%]">Área Evaluada</th>
+                    <th class="py-2 px-2 font-semibold text-center w-[9%]">Puntaje</th>
+                    <th class="py-2 px-2.5 font-semibold text-center w-[15%]">% Alcanzado</th>
+                    <th class="py-2 px-2.5 font-semibold w-[22%]">Parte Evaluada</th>
+                    <th class="py-2 px-2.5 font-semibold w-[32%]">Observación / Penalización</th>
+                  </tr>
+                </thead>
+                <tbody id="auditTableBody" class="divide-y divide-slate-200">
+                  <!-- Filas generadas dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- PLAN DE ACCIÓN / SÍNTESIS EJECUTIVA -->
+            <div class="bg-slate-50 border-l-4 border-[#E30613] border-y border-r border-slate-200 rounded-r-lg p-3.5">
+              <div class="text-xs font-extrabold uppercase tracking-wider text-slate-900 mb-1">
+                Foco de Acción Recomendado para el Operador
+              </div>
+              <p id="repActionSummary" class="text-xs leading-relaxed text-slate-700">
+                <!-- Resumen dinámico -->
+              </p>
+            </div>
+          </div>
+
+          <!-- PIE DE PÁGINA DEL DOCUMENTO -->
+          <footer class="mt-6 pt-3 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-400">
+            <span id="repFooterLeft">Informe Ejecutivo Condensado · Auditoría de Imagen Puma Energy</span>
+            <span>Página 1 de 1</span>
+          </footer>
+
+        </article>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+    // Configuración del worker de PDF.js
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    // Catálogo maestro de categorías estándar en orden oficial
+    const STANDARD_CATEGORIES = [
+      { key: 'acercamiento', label: 'Acercamiento Inicial', aliases: ['acercamiento inicial'] },
+      { key: 'mid', label: 'MID', aliases: ['mid'] },
+      { key: 'canopy', label: 'Canopy', aliases: ['canopy'] },
+      { key: 'pista', label: 'Pista', aliases: ['pista'] },
+      { key: 'surtidores', label: 'Área de Surtidores', aliases: ['area de surtidores', 'área de surtidores'] },
+      { key: 'letreros', label: 'Letreros y Alrededor Externo', aliases: ['letreros y alrededor externo', 'letreros y alrededores'] },
+      { key: 'banos', label: 'Baños', aliases: ['banos', 'baños'] },
+      { key: 'tienda', label: 'Tienda', aliases: ['tienda'] },
+      { key: 'uniformes', label: 'Uniformes', aliases: ['uniformes'] },
+      { key: 'otras', label: 'Otras Áreas Comunes', aliases: ['otras areas comunes', 'otras áreas comunes'] }
+    ];
+
+    // Estado global del reporte actual
+    let currentReport = null;
+    let isEditMode = false;
+
+    // Referencias DOM
+    const uploadSection = document.getElementById('uploadSection');
+    const reportWorkspace = document.getElementById('reportWorkspace');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const errorBox = document.getElementById('errorBox');
+    const errorText = document.getElementById('errorText');
+    const dropZone = document.getElementById('dropZone');
+    const reportSheet = document.getElementById('reportSheet');
+
+    // Utilidades de normalización de texto
+    function normalizeStr(str) {
+      return (str || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function showToast(message, icon = '✅') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMessage').textContent = message;
+      document.getElementById('toastIcon').textContent = icon;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3200);
+    }
+
+    function showError(msg) {
+      loadingIndicator.classList.add('hidden');
+      errorText.textContent = msg;
+      errorBox.classList.remove('hidden');
+    }
+
+    // Datos de ejemplo (Penonomé Nov-Dic 2026) para prueba instantánea
+    function getSampleData() {
+      return {
+        reference: 'RSS-0001269',
+        station: 'Penonomé',
+        period: 'Nov-Dic 2026',
+        client: 'Omar Quintanilla',
+        totalScore: '91/94',
+        totalPct: 96.81,
+        categories: [
+          {
+            label: 'Acercamiento Inicial',
+            score: '1/1',
+            pct: 100.00,
+            na: false,
+            findings: []
+          },
+          {
+            label: 'MID',
+            score: '2/2',
+            pct: 100.00,
+            na: false,
+            findings: []
+          },
+          {
+            label: 'Canopy',
+            score: '2/2',
+            pct: 100.00,
+            na: false,
+            findings: []
+          },
+          {
+            label: 'Pista',
+            score: '7/7',
+            pct: 100.00,
+            na: false,
+            findings: []
+          },
+          {
+            label: 'Área de Surtidores',
+            score: '20/20',
+            pct: 100.00,
+            na: false,
+            findings: [
+              {
+                part: 'Dispositivos de Despacho',
+                text: 'Calcomanías descamadas',
+                type: 'warning' // 100% pero tiene observación
+              }
+            ]
+          },
+          {
+            label: 'Letreros y Alrededor Externo',
+            score: '8/8',
+            pct: 100.00,
+            na: false,
+            findings: []
+          },
+          {
+            label: 'Baños',
+            score: '24/27',
+            pct: 88.89,
+            na: false,
+            findings: [
+              {
+                part: 'Control de Limpieza e Insumos',
+                text: 'Desactualizado (Control de limpieza: No)',
+                type: 'penalty' // Penalización directa
+              }
+            ]
+          },
+          {
+            label: 'Tienda',
+            score: '15/15',
+            pct: 100.00,
+            na: false,
+            findings: [
+              {
+                part: 'Infraestructura Interna',
+                text: 'Dos lámparas quemadas',
+                type: 'warning'
+              }
+            ]
+          },
+          {
+            label: 'Uniformes',
+            score: '12/12',
+            pct: 100.00,
+            na: false,
+            findings: []
+          },
+          {
+            label: 'Otras Áreas Comunes',
+            score: '0/0',
+            pct: 0.00,
+            na: true,
+            findings: []
+          }
+        ]
+      };
+    }
+
+    // Extracción de texto ordenada por coordenadas (Y descendente, X ascendente) usando PDF.js
+    async function extractOrderedPagesFromPDF(arrayBuffer) {
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
+      const pagesData = [];
+
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+
+        // Filtrar ítems vacíos y obtener coordenadas X, Y
+        const items = textContent.items
+          .filter(item => item.str && item.str.trim().length > 0)
+          .map(item => ({
+            str: item.str.trim(),
+            x: item.transform[4],
+            y: item.transform[5],
+            width: item.width || 0
+          }));
+
+        // Ordenar por Y descendente (de arriba hacia abajo) con tolerancia de 4pt, luego X ascendente (izquierda a derecha)
+        items.sort((a, b) => {
+          if (Math.abs(a.y - b.y) > 4) {
+            return b.y - a.y;
+          }
+          return a.x - b.x;
+        });
+
+        // Agrupar en líneas visuales
+        const lines = [];
+        let currentLine = [];
+        let lastY = null;
+
+        for (const item of items) {
+          if (lastY === null || Math.abs(item.y - lastY) <= 4.5) {
+            currentLine.push(item);
+          } else {
+            lines.push(currentLine);
+            currentLine = [item];
+          }
+          lastY = item.y;
+        }
+        if (currentLine.length > 0) {
+          lines.push(currentLine);
+        }
+
+        pagesData.push({
+          pageNum,
+          items,
+          lines: lines.map(lineItems => ({
+            y: lineItems[0].y,
+            items: lineItems,
+            text: lineItems.map(i => i.str).join(' ')
+          }))
+        });
+      }
+
+      return pagesData;
+    }
+
+    // Parser inteligente adaptado a la plantilla de Auditoría de Imagen Puma Energy
+    function parseAuditPDF(pagesData, fileName = '') {
+      const allLines = pagesData.flatMap(p => p.lines.map(l => ({ ...l, pageNum: p.pageNum })));
+      const page1Lines = pagesData[0] ? pagesData[0].lines : [];
+
+      // 1. Extraer referencia desde el nombre del archivo o texto (ej. RSS-0001269)
+      let reference = 'S/R';
+      const refMatchFile = fileName.match(/(RSS-\d+)/i);
+      if (refMatchFile) {
+        reference = refMatchFile[1].toUpperCase();
+      } else {
+        const fullText = allLines.map(l => l.text).join(' ');
+        const refMatchText = fullText.match(/(RSS-\d+)/i);
+        if (refMatchText) reference = refMatchText[1].toUpperCase();
+      }
+
+      // 2. Extraer Estación y Período (Página 1)
+      let station = 'No especificada';
+      let period = 'No especificado';
+
+      for (let i = 0; i < page1Lines.length; i++) {
+        const lineText = page1Lines[i].text;
+        const norm = normalizeStr(lineText);
+
+        // Buscar "visita al sitio para [Estación]"
+        const siteMatch = lineText.match(/visita al sitio para\s+([A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s\-]+?)(?:\.|,|A continuación|$)/i);
+        if (siteMatch && siteMatch[1]) {
+          station = siteMatch[1].trim();
+        }
+
+        // Buscar fila con "Peridodo" / "Periodo" y "Estación"
+        if (norm.includes('peridodo') || norm.includes('periodo')) {
+          if (page1Lines[i + 1]) {
+            const nextItems = page1Lines[i + 1].items;
+            if (nextItems.length >= 2) {
+              period = nextItems[0].str;
+              if (station === 'No especificada') station = nextItems[1].str;
+            } else if (nextItems.length === 1) {
+              period = nextItems[0].str;
+            }
+          }
+        }
+      }
+
+      // Si el nombre del archivo contiene la estación y aún no se detectó
+      if (station === 'No especificada' && fileName) {
+        const fnPart = fileName.split('-')[0];
+        if (fnPart && fnPart.length > 2) station = fnPart;
+      }
+
+      // 3. Extraer Nombre del Cliente (usualmente última página)
+      let client = 'No registrado';
+      for (let i = allLines.length - 1; i >= 0; i--) {
+        const t = allLines[i].text;
+        const clientMatch = t.match(/Nombre Cliente:\s*(.+)/i);
+        if (clientMatch && clientMatch[1]) {
+          client = clientMatch[1].replace(/Firma Cliente:.*/i, '').trim();
+          break;
+        }
+      }
+
+      // 4. Extraer Tabla Resumen de Página 1 (Categorías, Puntajes y Porcentajes)
+      let totalScore = '0/0';
+      let totalPct = 0;
+      const categories = STANDARD_CATEGORIES.map(c => ({
+        key: c.key,
+        label: c.label,
+        aliases: c.aliases,
+        score: '0/0',
+        pct: 0,
+        na: false,
+        findings: []
+      }));
+
+      for (const line of page1Lines) {
+        const norm = normalizeStr(line.text);
+
+        // Detectar Total Auditoria
+        if (norm.includes('total auditoria')) {
+          const scoreM = line.text.match(/(\d+\s*\/\s*\d+)/);
+          const pctM = line.text.match(/(\d{1,3}(?:[.,]\d{1,2})?)\s*%?$/);
+          if (scoreM) totalScore = scoreM[1].replace(/\s+/g, '');
+          if (pctM) totalPct = parseFloat(pctM[1].replace(',', '.'));
+          continue;
+        }
+
+        // Emparejar con cada una de las 10 categorías estándar
+        for (const cat of categories) {
+          const matchedAlias = cat.aliases.some(alias => norm.startsWith(alias) || norm.includes(alias));
+          if (matchedAlias && !norm.includes('resumen')) {
+            const scoreM = line.text.match(/(\d+\s*\/\s*\d+)/);
+            // Buscar el último número decimal o entero en la línea (el porcentaje)
+            const numbers = line.text.match(/(\d{1,3}(?:[.,]\d{1,2})?)/g);
+            if (scoreM) {
+              cat.score = scoreM[1].replace(/\s+/g, '');
+              if (cat.score === '0/0') cat.na = true;
+            }
+            if (numbers && numbers.length > 0) {
+              const lastNum = parseFloat(numbers[numbers.length - 1].replace(',', '.'));
+              if (!isNaN(lastNum) && lastNum <= 100) {
+                cat.pct = lastNum;
+              }
+            }
+          }
+        }
+      }
+
+      // 5. Recorrer páginas detalladas para encontrar Observaciones y respuestas "No"
+      let activeCategory = null;
+      const ignoreWords = new Set([
+        'si', 'sí', 'no', 'no aplica', 'limpieza', 'funcionamiento', 'estado',
+        'total', 'puntaje', '%', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
+        'puma', 'energy'
+      ]);
+
+      for (let i = 0; i < allLines.length; i++) {
+        const line = allLines[i];
+        const text = line.text.trim();
+        const norm = normalizeStr(text);
+
+        // Saltar tabla resumen de la primera página antes de "Acercamiento Inicial" detallado
+        if (line.pageNum === 1 && i < 18) continue;
+
+        // Detectar cambio de sección principal (ej. "Canopy", "Baños", "Tienda", etc.)
+        if (text.length < 40 && !norm.includes('observaciones') && !text.includes('?')) {
+          const foundCat = categories.find(c => c.aliases.some(a => norm === a));
+          if (foundCat) {
+            activeCategory = foundCat;
+            continue;
+          }
+        }
+
+        // Detectar bloques "Observaciones - [Subsección]"
+        const obsHeaderMatch = text.match(/Observaciones\s*[-–]\s*(.+)/i);
+        if (obsHeaderMatch && activeCategory) {
+          const subsectionName = obsHeaderMatch[1].trim();
+          const obsY = line.y;
+          const obsX = line.items[0] ? line.items[0].x : 0;
+
+          // Buscar texto que esté inmediatamente debajo de "Observaciones - ..." (Y menor, dentro de ~45pt)
+          // y alineado horizontalmente dentro de la misma columna de observaciones
+          const candidateTexts = [];
+          for (let j = i + 1; j < allLines.length; j++) {
+            const nextLine = allLines[j];
+            if (nextLine.pageNum !== line.pageNum) break;
+            const deltaY = obsY - nextLine.y;
+            if (deltaY > 55) break; // Demasiado abajo, ya pertenece a otra fila
+
+            // Revisar ítems individuales en esa línea
+            for (const item of nextLine.items) {
+              const itemNorm = normalizeStr(item.str);
+              // Ignorar respuestas estándar ("Sí", "No", etc.) o preguntas
+              if (ignoreWords.has(itemNorm)) continue;
+              if (item.str.includes('?')) continue;
+              if (/observaciones\s*[-–]/i.test(item.str)) continue;
+              // Si el ítem está en la zona horizontal de la tabla de evaluación (X > 110 y X < 480)
+              if (item.x >= obsX - 60 && item.x <= 480) {
+                candidateTexts.push(item.str);
+              }
+            }
+          }
+
+          const cleanObs = candidateTexts.join(' ').replace(/\s+/g, ' ').trim();
+          if (cleanObs.length > 2) {
+            // Evitar duplicados en la misma categoría y subsección
+            const alreadyExists = activeCategory.findings.some(
+              f => normalizeStr(f.part) === normalizeStr(subsectionName) && normalizeStr(f.text) === normalizeStr(cleanObs)
+            );
+            if (!alreadyExists) {
+              const isPenalized = activeCategory.pct < 100 && !activeCategory.na;
+              activeCategory.findings.push({
+                part: subsectionName,
+                text: cleanObs,
+                type: isPenalized ? 'penalty' : 'warning'
+              });
+            }
+          }
+        }
+
+        // Detectar respuestas "No" aisladas (no "No Aplica") dentro de una categoría con penalización
+        if (activeCategory && activeCategory.pct < 100 && !activeCategory.na) {
+          const hasExplicitNo = line.items.some(it => normalizeStr(it.str) === 'no');
+          if (hasExplicitNo) {
+            // Buscar hacia atrás la subsección más cercana ("Observaciones - X" o título izquierdo)
+            let nearestPart = activeCategory.label;
+            for (let k = i - 1; k >= Math.max(0, i - 12); k--) {
+              const prevText = allLines[k].text;
+              const prevObs = prevText.match(/Observaciones\s*[-–]\s*(.+)/i);
+              if (prevObs) {
+                nearestPart = prevObs[1].trim();
+                break;
+              }
+            }
+
+            // Si ya existe una observación registrada para esa parte, enriquecerla indicando penalización
+            const existing = activeCategory.findings.find(f => normalizeStr(f.part) === normalizeStr(nearestPart));
+            if (existing) {
+              existing.type = 'penalty';
+              if (!existing.text.toLowerCase().includes('penalización')) {
+                existing.text = `${existing.text} (Ítem evaluado: No)`;
+              }
+            } else {
+              activeCategory.findings.push({
+                part: nearestPart,
+                text: 'Criterio incumplido (Respuesta: No)',
+                type: 'penalty'
+              });
+            }
+          }
+        }
+      }
+
+      // Si alguna categoría tiene <100% y no se capturó el texto específico, añadir aviso genérico editable
+      for (const cat of categories) {
+        if (!cat.na && cat.pct < 100 && cat.findings.length === 0) {
+          cat.findings.push({
+            part: 'Revisión general de área',
+            text: `Descuento de puntos detectado (${cat.score})`,
+            type: 'penalty'
+          });
+        }
+      }
+
+      return {
+        reference,
+        station,
+        period,
+        client,
+        totalScore,
+        totalPct,
+        categories
+      };
+    }
+
+    // Renderizar los datos en la hoja ejecutiva de 1 página
+    function renderReport(data) {
+      currentReport = data;
+
+      // Encabezado y metadatos
+      document.getElementById('repRef').textContent = data.reference;
+      document.getElementById('repStation').textContent = data.station;
+      document.getElementById('repPeriod').textContent = data.period;
+      document.getElementById('repClient').textContent = data.client;
+      document.getElementById('repTotalPct').textContent = `${data.totalPct.toFixed(2)}%`;
+      document.getElementById('repTotalScore').textContent = `(${data.totalScore})`;
+      document.getElementById('repFooterLeft').textContent = `Informe Ejecutivo Condensado · Estación ${data.station} (${data.period})`;
+
+      // Color dinámico del cuadro de nota global
+      const scoreBox = document.getElementById('repScoreBox');
+      const totalPctEl = document.getElementById('repTotalPct');
+      if (data.totalPct >= 90) {
+        scoreBox.className = 'bg-emerald-50 border border-emerald-200 rounded-lg p-3';
+        totalPctEl.className = 'text-lg sm:text-xl font-extrabold text-[#00843D]';
+      } else if (data.totalPct >= 80) {
+        scoreBox.className = 'bg-amber-50 border border-amber-200 rounded-lg p-3';
+        totalPctEl.className = 'text-lg sm:text-xl font-extrabold text-amber-700';
+      } else {
+        scoreBox.className = 'bg-red-50 border border-red-200 rounded-lg p-3';
+        totalPctEl.className = 'text-lg sm:text-xl font-extrabold text-[#E30613]';
+      }
+
+      // Calcular KPIs
+      const applicableCats = data.categories.filter(c => !c.na);
+      const perfectCount = applicableCats.filter(c => c.pct >= 100).length;
+      let penaltyCount = 0;
+      let warningCount = 0;
+
+      data.categories.forEach(c => {
+        c.findings.forEach(f => {
+          if (f.type === 'penalty') penaltyCount++;
+          else warningCount++;
+        });
+      });
+
+      document.getElementById('kpiPerfectAreas').textContent = `${perfectCount} de ${applicableCats.length}`;
+      document.getElementById('kpiPenalties').textContent = penaltyCount;
+      document.getElementById('kpiWarnings').textContent = warningCount;
+
+      // Renderizar filas de la tabla
+      const tbody = document.getElementById('auditTableBody');
+      tbody.innerHTML = '';
+
+      data.categories.forEach(cat => {
+        if (cat.findings.length === 0) {
+          // Fila limpia (sin hallazgos o N/A)
+          const tr = document.createElement('tr');
+          tr.className = cat.na ? 'bg-slate-50/70 text-slate-400' : 'hover:bg-slate-50';
+
+          const pctDisplay = cat.na
+            ? `<span class="text-slate-400 font-medium">N/A</span>`
+            : `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-[#00843D]">${cat.pct.toFixed(2)}%</span>`;
+
+          const statusText = cat.na ? 'No aplica en esta estación' : 'Sin novedades';
+
+          tr.innerHTML = `
+            <td class="py-2 px-2.5 font-bold ${cat.na ? 'text-slate-500' : 'text-slate-900'}">${cat.label}</td>
+            <td class="py-2 px-2 text-center font-medium">${cat.score}</td>
+            <td class="py-2 px-2.5 text-center">${pctDisplay}</td>
+            <td class="py-2 px-2.5 text-slate-400">—</td>
+            <td class="py-2 px-2.5 text-slate-500">${statusText}</td>
+          `;
+          tbody.appendChild(tr);
+        } else {
+          // Fila(s) con hallazgos (penalización o nota preventiva)
+          cat.findings.forEach((finding, idx) => {
+            const isPenalty = finding.type === 'penalty';
+            const tr = document.createElement('tr');
+            tr.className = isPenalty ? 'bg-red-50/80' : 'bg-amber-50/80';
+
+            const pctBadge = isPenalty
+              ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-red-100 text-[#E30613]">${cat.pct.toFixed(2)}%</span>`
+              : `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-[#00843D]">${cat.pct.toFixed(2)}%</span>`;
+
+            const obsBadge = isPenalty
+              ? `<span class="inline-block text-[10px] font-extrabold uppercase tracking-wider text-[#E30613] mr-1">Penalización:</span>`
+              : `<span class="inline-block text-[10px] font-extrabold uppercase tracking-wider text-amber-700 mr-1">Nota Preventiva:</span>`;
+
+            tr.innerHTML = `
+              <td class="py-2 px-2.5 font-bold text-slate-900">${idx === 0 ? cat.label : ''}</td>
+              <td class="py-2 px-2 text-center font-semibold text-slate-800">${idx === 0 ? cat.score : ''}</td>
+              <td class="py-2 px-2.5 text-center">${idx === 0 ? pctBadge : ''}</td>
+              <td class="py-2 px-2.5 font-semibold text-slate-800">${finding.part}</td>
+              <td class="py-2 px-2.5 ${isPenalty ? 'text-red-900 font-medium' : 'text-amber-900 font-medium'}">
+                ${obsBadge}${finding.text}
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      });
+
+      // Generar texto dinámico de Foco de Acción
+      const penalizedCats = data.categories.filter(c => !c.na && c.pct < 100);
+      const warningFindings = data.categories.flatMap(c =>
+        c.findings.filter(f => f.type === 'warning').map(f => `${c.label} (${f.part}: ${f.text})`)
+      );
+
+      let actionHTML = `La estación <strong>${data.station}</strong> alcanzó un cumplimiento global del <strong>${data.totalPct.toFixed(2)}%</strong> (${data.totalScore} pts). `;
+
+      if (penalizedCats.length > 0) {
+        const details = penalizedCats.map(c => {
+          const fText = c.findings.map(f => `${f.part}: ${f.text}`).join('; ');
+          return `<strong>${c.label} (${c.pct.toFixed(2)}%)</strong> — ${fText}`;
+        }).join(' | ');
+        actionHTML += `Se requiere corrección prioritaria en las áreas con pérdida de puntaje: ${details}. `;
+      } else {
+        actionHTML += `No se registraron descuentos de puntaje en ninguna categoría auditada. `;
+      }
+
+      if (warningFindings.length > 0) {
+        actionHTML += `Adicionalmente, atender preventivamente las observaciones sin penalización: <strong>${warningFindings.join('; ')}</strong>.`;
+      }
+
+      document.getElementById('repActionSummary').innerHTML = actionHTML;
+
+      // Mostrar espacio de trabajo
+      uploadSection.classList.add('hidden');
+      errorBox.classList.add('hidden');
+      loadingIndicator.classList.add('hidden');
+      reportWorkspace.classList.remove('hidden');
+    }
+
+    // Procesar archivo PDF seleccionado o arrastrado
+    async function handlePDFFile(file) {
+      if (!file) return;
+      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        showError('Por favor selecciona un archivo con extensión .pdf válido.');
+        return;
+      }
+
+      errorBox.classList.add('hidden');
+      loadingIndicator.classList.remove('hidden');
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pagesData = await extractOrderedPagesFromPDF(arrayBuffer);
+        if (!pagesData || pagesData.length === 0) {
+          throw new Error('El PDF parece estar vacío o protegido contra lectura.');
+        }
+        const parsedReport = parseAuditPDF(pagesData, file.name);
+        renderReport(parsedReport);
+        showToast(`Informe de ${parsedReport.station} generado correctamente`);
+      } catch (err) {
+        console.error(err);
+        showError(`Ocurrió un problema leyendo el PDF: ${err.message}. Puedes probar con el botón de ejemplo o verificar que el PDF contenga texto seleccionable.`);
+      }
+    }
+
+    // Generar texto formateado para WhatsApp leyendo el contenido actual (incluso si fue editado)
+    function copySummaryToWhatsApp() {
+      const station = document.getElementById('repStation').innerText.trim();
+      const period = document.getElementById('repPeriod').innerText.trim();
+      const totalPct = document.getElementById('repTotalPct').innerText.trim();
+      const totalScore = document.getElementById('repTotalScore').innerText.trim();
+
+      let lines = [];
+      lines.push(`⛽ *RESUMEN AUDITORÍA DE IMAGEN*`);
+      lines.push(`📍 *Estación:* ${station}`);
+      lines.push(`📅 *Período:* ${period}`);
+      lines.push(`🏆 *Nota Global:* *${totalPct}* ${totalScore}`);
+      lines.push(``);
+      lines.push(`📊 *RESULTADOS POR ÁREA:*`);
+
+      const rows = document.querySelectorAll('#auditTableBody tr');
+      rows.forEach(tr => {
+        const cells = tr.querySelectorAll('td');
+        if (cells.length < 5) return;
+        const area = cells[0].innerText.trim();
+        const pct = cells[2].innerText.trim();
+        const part = cells[3].innerText.trim();
+        const obs = cells[4].innerText.trim();
+
+        if (pct === 'N/A') return;
+
+        if (area) {
+          const isLow = pct !== '100.00%';
+          const icon = isLow ? '❌' : (obs !== 'Sin novedades' ? '⚠️' : '✅');
+          lines.push(`${icon} *${area}:* ${pct}`);
+        }
+        if (obs !== 'Sin novedades' && obs !== 'No aplica en esta estación') {
+          lines.push(`   ↳ _${part}:_ ${obs}`);
+        }
+      });
+
+      const whatsappText = lines.join('\n');
+
+      // Copiado compatible con iFrames y navegadores modernos
+      const tempTextArea = document.createElement('textarea');
+      tempTextArea.value = whatsappText;
+      tempTextArea.style.position = 'fixed';
+      tempTextArea.style.left = '-9999px';
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      try {
+        document.execCommand('copy');
+        showToast('Resumen copiado al portapapeles listo para WhatsApp', '📋');
+      } catch (e) {
+        showToast('No se pudo copiar automáticamente', '⚠️');
+      }
+      document.body.removeChild(tempTextArea);
+    }
+
+    // Alternar modo edición en pantalla
+    function toggleEditMode() {
+      isEditMode = !isEditMode;
+      const editableSelectors = [
+        '#repRef', '#repStation', '#repPeriod', '#repClient',
+        '#repTotalPct', '#repTotalScore', '#repActionSummary',
+        '#auditTableBody td'
+      ];
+      const elements = document.querySelectorAll(editableSelectors.join(','));
+      elements.forEach(el => {
+        el.setAttribute('contenteditable', isEditMode ? 'true' : 'false');
+      });
+
+      if (isEditMode) {
+        reportSheet.classList.add('editing-active');
+        document.getElementById('editBanner').classList.remove('hidden');
+        document.getElementById('editBtnLabel').textContent = 'Finalizar edición';
+      } else {
+        reportSheet.classList.remove('editing-active');
+        document.getElementById('editBanner').classList.add('hidden');
+        document.getElementById('editBtnLabel').textContent = 'Editar texto manualmente';
+        showToast('Cambios aplicados al informe', '✏️');
+      }
+    }
+
+    // Eventos de interfaz
+    document.getElementById('fileInputMain').addEventListener('change', e => handlePDFFile(e.target.files[0]));
+    document.getElementById('fileInputTop').addEventListener('change', e => handlePDFFile(e.target.files[0]));
+
+    document.getElementById('btnLoadSampleMain').addEventListener('click', () => {
+      renderReport(getSampleData());
+      showToast('Ejemplo cargado: Estación Penonomé');
+    });
+    document.getElementById('btnLoadSampleTop').addEventListener('click', () => {
+      renderReport(getSampleData());
+      showToast('Ejemplo cargado: Estación Penonomé');
+    });
+
+    document.getElementById('btnReset').addEventListener('click', () => {
+      if (isEditMode) toggleEditMode();
+      reportWorkspace.classList.add('hidden');
+      uploadSection.classList.remove('hidden');
+      document.getElementById('fileInputMain').value = '';
+      document.getElementById('fileInputTop').value = '';
+    });
+
+    document.getElementById('btnToggleEdit').addEventListener('click', toggleEditMode);
+    document.getElementById('btnCloseEditBanner').addEventListener('click', toggleEditMode);
+    document.getElementById('btnCopyWhatsApp').addEventListener('click', copySummaryToWhatsApp);
+    document.getElementById('btnPrintPDF').addEventListener('click', () => {
+      if (isEditMode) toggleEditMode();
+      window.print();
+    });
+
+    // Eventos Drag & Drop
+    ['dragenter', 'dragover'].forEach(evtName => {
+      dropZone.addEventListener(evtName, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('border-[#00843D]', 'bg-emerald-50/40');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(evtName => {
+      dropZone.addEventListener(evtName, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('border-[#00843D]', 'bg-emerald-50/40');
+      });
+    });
+
+    dropZone.addEventListener('drop', e => {
+      const files = e.dataTransfer.files;
+      if (files && files.length > 0) {
+        handlePDFFile(files[0]);
+      }
+    });
+  </script>
+</body>
+</html>
