@@ -411,7 +411,7 @@
 
   <div class="dropzone">
     <div class="drop-area" id="dropArea">
-      Arrastra aquí el PDF original de Auditoría de Imagen (9 páginas) o haz clic en <strong>Subir PDF de Auditoría</strong>.
+      Arrastra aquí el PDF de Auditoría de Imagen o haz clic en <strong>Subir PDF de Auditoría</strong>.
     </div>
   </div>
 
@@ -535,9 +535,10 @@
       if (!t) return true;
       if (t.includes("?")) return true;
       if (/^observaciones\s*[-–]/i.test(t)) return true;
-      if (/^(limpieza|funcionamiento|estado|puntaje|%|total|sí|si|no|no aplica)$/i.test(t)) return true;
+      if (/^(observación|observacion|penalización|penalizacion|limpieza|funcionamiento|estado|puntaje|%|total|sí|si|no|no aplica|conforme|sin novedades ni penalizaciones\.?|sin evaluación en esta estación\.?)$/i.test(t)) {
+        return true;
+      }
       if (/^\d+\s*\/\s*\d+$/.test(t) || /^\d{1,3}\.\d{2}$/.test(t) || /^\d{1,2}$/.test(t)) return true;
-      // Frases típicas de preguntas del cuestionario que a veces quedan partidas sin '?'
       if (/^(se ve limpia|se encuentra libre|se encuentran libres|se encuentra en buen|se encuentran en buen|no puede haber|puede que haya|tiene disponible|cuenta con un|los elementos de|la fachada de|la entrada y|la rodadura de|la pista debajo|los dispositivos de|los elementos de|los qrs de|las isletas,|los exhibidores de|los basureros y|las mangueras de|los extinguidores se|la caseta de|los letreros se|el espacio dedicado|los jardines en|los estacionamientos de|las aceras y|el rotulo|el baño se|la musica en|la tienda se|el uniforme del|el personal de|los elementos del|la terraza y)/i.test(t)) {
         return true;
       }
@@ -663,87 +664,123 @@
       const findingsByArea = {};
       for (const a of AREAS) findingsByArea[a.key] = [];
 
-      for (const page of pages) {
-        if (page.pageNum === 1) continue;
-        const lines = groupIntoLines(page.items);
+      // Detectar si el PDF tiene formato original ("Observaciones - ...") o formato condensado
+      const hasOriginalObsFormat = pages.some(pg =>
+        pg.items.some(it => /^Observaciones\s*[-–]/i.test(it.str))
+      );
 
-        const areaHeaders = [];
-        for (const l of lines) {
-          const nl = normalize(l.text);
-          const matched = AREAS.find(a => nl === normalize(a.key));
-          if (matched) {
-            areaHeaders.push({ key: matched.key, y: l.y });
+      if (hasOriginalObsFormat) {
+        for (const page of pages) {
+          if (page.pageNum === 1) continue;
+          const lines = groupIntoLines(page.items);
+
+          const areaHeaders = [];
+          for (const l of lines) {
+            const nl = normalize(l.text);
+            const matched = AREAS.find(a => nl === normalize(a.key));
+            if (matched) areaHeaders.push({ key: matched.key, y: l.y });
           }
-        }
 
-        const obsAnchors = [];
-        for (let idx = 0; idx < lines.length; idx++) {
-          const l = lines[idx];
-          const m = l.text.match(/^Observaciones\s*[-–]\s*(.+)$/i);
-          if (m) {
-            obsAnchors.push({
-              partName: cleanText(m[1]),
-              y: l.y,
-              x: l.items[0]?.x || 0,
-              lineIdx: idx
-            });
-          }
-        }
-
-        for (let idx = 0; idx < obsAnchors.length; idx++) {
-          const anchor = obsAnchors[idx];
-          const nextAnchorY = obsAnchors[idx + 1] ? obsAnchors[idx + 1].y - 1 : page.height - 20;
-
-          let areaForAnchor = null;
-          for (let h = areaHeaders.length - 1; h >= 0; h--) {
-            if (areaHeaders[h].y <= anchor.y + 4) {
-              areaForAnchor = areaHeaders[h].key;
-              break;
+          const obsAnchors = [];
+          for (let idx = 0; idx < lines.length; idx++) {
+            const l = lines[idx];
+            const m = l.text.match(/^Observaciones\s*[-–]\s*(.+)$/i);
+            if (m) {
+              obsAnchors.push({
+                partName: cleanText(m[1]),
+                y: l.y,
+                x: l.items[0]?.x || 0,
+                lineIdx: idx
+              });
             }
           }
-          if (!areaForAnchor) areaForAnchor = areaHeaders[0]?.key || null;
-          if (!areaForAnchor) continue;
 
-          // Detectar si hubo "No" en esta parte evaluada
-          const prevAnchorY = idx > 0 ? obsAnchors[idx - 1].y : Math.max(30, anchor.y - 70);
-          const bandItems = page.items.filter(
-            it => it.y > prevAnchorY + 2 && it.y < anchor.y - 1
-          );
-          const hasNo = bandItems.some(it => /^(no)$/i.test(it.str.trim()));
+          for (let idx = 0; idx < obsAnchors.length; idx++) {
+            const anchor = obsAnchors[idx];
+            const nextAnchorY = obsAnchors[idx + 1] ? obsAnchors[idx + 1].y - 1 : page.height - 20;
 
-          // Buscar texto de observación entre el ancla y el siguiente ancla (o hasta 35px abajo)
-          const searchBottomY = Math.min(nextAnchorY, anchor.y + 35);
-          const belowItems = page.items.filter(
-            it => it.y > anchor.y + 1.5 && it.y <= searchBottomY
-          );
-          const belowLines = groupIntoLines(belowItems);
+            let areaForAnchor = null;
+            for (let h = areaHeaders.length - 1; h >= 0; h--) {
+              if (areaHeaders[h].y <= anchor.y + 4) {
+                areaForAnchor = areaHeaders[h].key;
+                break;
+              }
+            }
+            if (!areaForAnchor) areaForAnchor = areaHeaders[0]?.key || null;
+            if (!areaForAnchor) continue;
 
-          const obsLines = [];
-          for (const bl of belowLines) {
-            if (AREAS.some(a => normalize(a.key) === normalize(bl.text))) break;
-            if (/^observaciones\s*[-–]/i.test(bl.text)) break;
-
-            // Filtrar palabras sueltas de Sí/No/Puntaje en la misma línea
-            const nonAnswerItems = bl.items.filter(
-              it => !/^(sí|si|no|no aplica|limpieza|funcionamiento|estado|puntaje|%|total)$/i.test(it.str.trim())
+            const prevAnchorY = idx > 0 ? obsAnchors[idx - 1].y : Math.max(30, anchor.y - 70);
+            const bandItems = page.items.filter(
+              it => it.y > prevAnchorY + 2 && it.y < anchor.y - 1
             );
-            const lineStr = cleanText(nonAnswerItems.map(i => i.str).join(" "));
-            if (!lineStr || isChecklistOrHeaderLine(lineStr)) continue;
+            const hasNo = bandItems.some(it => /^(no)$/i.test(it.str.trim()));
 
-            // Evitar nombres de la siguiente "Parte Evaluada" ubicados en la columna izquierda estrecha (<105px)
-            if (nonAnswerItems.every(i => i.x < 105) && lineStr.length <= 32) continue;
+            const searchBottomY = Math.min(nextAnchorY, anchor.y + 35);
+            const belowItems = page.items.filter(
+              it => it.y > anchor.y + 1.5 && it.y <= searchBottomY
+            );
+            const belowLines = groupIntoLines(belowItems);
 
-            obsLines.push(lineStr);
+            const obsLines = [];
+            for (const bl of belowLines) {
+              if (AREAS.some(a => normalize(a.key) === normalize(bl.text))) break;
+              if (/^observaciones\s*[-–]/i.test(bl.text)) break;
+
+              const nonAnswerItems = bl.items.filter(
+                it => !/^(sí|si|no|no aplica|limpieza|funcionamiento|estado|puntaje|%|total)$/i.test(it.str.trim())
+              );
+              const lineStr = cleanText(nonAnswerItems.map(i => i.str).join(" "));
+              if (!lineStr || isChecklistOrHeaderLine(lineStr)) continue;
+              if (nonAnswerItems.every(i => i.x < 105) && lineStr.length <= 32) continue;
+
+              obsLines.push(lineStr);
+            }
+
+            const writtenObs = cleanText(obsLines.join(" "));
+            if (hasNo || writtenObs.length > 0) {
+              findingsByArea[areaForAnchor].push({
+                part: anchor.partName,
+                isPenalty: hasNo,
+                observation: writtenObs
+              });
+            }
           }
+        }
+      } else {
+        // Lectura cuando el PDF ya tiene la tabla resumida con columna OBSERVACIÓN / PENALIZACIÓN
+        for (const page of pages) {
+          const lines = groupIntoLines(page.items);
+          let currentArea = null;
 
-          const writtenObs = cleanText(obsLines.join(" "));
+          for (let i = 0; i < lines.length; i++) {
+            const l = lines[i];
+            const matchedArea = AREAS.find(a => normalize(a.key) === normalize(l.text));
+            if (matchedArea) {
+              currentArea = matchedArea.key;
+              continue;
+            }
+            if (!currentArea) continue;
 
-          if (hasNo || writtenObs.length > 0) {
-            findingsByArea[areaForAnchor].push({
-              part: anchor.partName,
-              isPenalty: hasNo,
-              observation: writtenObs
-            });
+            const hasPenWord = /\bPENALIZACIÓN\b|\bPENALIZACION\b/i.test(l.text);
+            const hasObsWord = /\bOBSERVACIÓN\b|\bOBSERVACION\b/i.test(l.text);
+
+            if (hasPenWord || hasObsWord) {
+              // Extraer solo el texto posterior a OBSERVACIÓN / PENALIZACIÓN en esa línea o la siguiente limpia
+              const afterMatch = l.text.split(/(?:OBSERVACI[ÓO]N|PENALIZACI[ÓO]N)/i).slice(1).join(" ");
+              const cleanObs = cleanText(
+                afterMatch
+                  .split(" ")
+                  .filter(tok => !isChecklistOrHeaderLine(tok))
+                  .join(" ")
+              );
+
+              const finalObs = isChecklistOrHeaderLine(cleanObs) ? "" : cleanObs;
+              findingsByArea[currentArea].push({
+                part: currentArea,
+                isPenalty: hasPenWord,
+                observation: finalObs
+              });
+            }
           }
         }
       }
