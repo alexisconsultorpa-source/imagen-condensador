@@ -152,15 +152,15 @@
 
     .info-strip {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 5px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
       margin-bottom: 8px;
     }
 
     .info-card {
       border: 1px solid var(--line);
       border-radius: 4px;
-      padding: 5px 6px;
+      padding: 5px 7px;
       background: var(--white);
       min-width: 0;
     }
@@ -183,7 +183,7 @@
     }
 
     .info-card .v {
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 800;
       margin-top: 1px;
       word-break: break-word;
@@ -227,7 +227,7 @@
       overflow-wrap: break-word;
     }
 
-    tbody tr.not-applicable td {
+    tbody tr.under-100 td {
       background: var(--red-soft);
     }
 
@@ -235,13 +235,13 @@
       font-weight: 700;
     }
 
-    .pct-ok {
-      color: var(--green);
+    .pct-bad {
+      color: var(--red);
       font-weight: 800;
     }
 
-    .pct-na {
-      color: var(--red);
+    .pct-ok {
+      color: var(--green);
       font-weight: 800;
     }
 
@@ -362,17 +362,13 @@
           <div class="k">Período</div>
           <div class="v" id="valPeriod">—</div>
         </div>
-        <div class="info-card good">
+        <div class="info-card good" id="pctCard">
           <div class="k">% Alcanzado</div>
           <div class="v" id="valPct">—</div>
         </div>
         <div class="info-card">
           <div class="k">Puntaje</div>
           <div class="v" id="valScore">—</div>
-        </div>
-        <div class="info-card alert">
-          <div class="k">Penalizaciones ("No")</div>
-          <div class="v" id="valPenalties">—</div>
         </div>
       </div>
 
@@ -538,15 +534,10 @@
         }
       }
 
-      let penaltyCount = 0;
       const noAplicaAreas = new Set();
 
       for (const pg of pages) {
-        for (const it of pg.items) {
-          if (/^no$/i.test(it.str.trim())) penaltyCount++;
-        }
         if (pg.pageNum === 1) continue;
-
         const lines = toLines(pg.items);
         const areaMarkers = [];
         for (const l of lines) {
@@ -568,7 +559,7 @@
         }
       }
 
-      return { station, period, client, totalScore, totalPct, penaltyCount, scores, noAplicaAreas };
+      return { station, period, client, totalScore, totalPct, scores, noAplicaAreas };
     }
 
     function render(data, fileName) {
@@ -577,14 +568,22 @@
       document.getElementById("valPeriod").textContent = data.period;
       document.getElementById("valPct").textContent = data.totalPct;
       document.getElementById("valScore").textContent = data.totalScore;
-      document.getElementById("valPenalties").textContent = String(data.penaltyCount);
       document.getElementById("valClient").textContent = `Encargado: ${data.client}`;
       document.getElementById("valDate").textContent = new Date().toLocaleDateString("es-PA");
+
+      const pctCard = document.getElementById("pctCard");
+      const globalPctNum = parseFloat((data.totalPct || "").replace("%", ""));
+      pctCard.classList.remove("good", "alert");
+      if (!Number.isNaN(globalPctNum) && globalPctNum < 100) {
+        pctCard.classList.add("alert");
+      } else {
+        pctCard.classList.add("good");
+      }
 
       reportBody.innerHTML = "";
       const summaryLines = [
         `*INFORME CONDENSADO — ${data.station.toUpperCase()}*`,
-        `Período: ${data.period} | Puntaje: ${data.totalScore} (${data.totalPct}) | Penalizaciones: ${data.penaltyCount}`,
+        `Período: ${data.period} | Puntaje: ${data.totalScore} (${data.totalPct})`,
         ""
       ];
 
@@ -593,10 +592,13 @@
         const applies = sc.total > 0 && !data.noAplicaAreas.has(a.key);
 
         const tr = document.createElement("tr");
-        if (!applies) tr.className = "not-applicable";
-
         const pctStr = applies ? `${sc.pct.toFixed(2)}%` : "0.00%";
-        const pctClass = applies ? "pct-ok" : "pct-na";
+        const pctNum = applies ? sc.pct : 0;
+        const isUnder100 = pctNum < 100;
+
+        if (isUnder100) tr.className = "under-100";
+
+        const pctClass = isUnder100 ? "pct-bad" : "pct-ok";
         const statusBadge = applies
           ? `<span class="tag-aplica">Aplica</span>`
           : `<span class="tag-no-aplica">No aplica</span>`;
