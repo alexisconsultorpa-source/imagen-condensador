@@ -504,14 +504,59 @@
       return false;
     }
 
-    function isQuestionPhrase(txt) {
-      const t = clean(txt);
+    function isChecklistText(txt) {
+      const t = norm(txt);
       if (!t) return true;
-      if (t.includes("?")) return true;
-      // Preguntas o textos estándar del cuestionario
-      if (/^(se ve limpia|se encuentra libre|se encuentran libres|se encuentra en buen|se encuentran en buen|no puede haber|puede que haya|tiene disponible|cuenta con un|los elementos de|la fachada de|la entrada y|la rodadura de|la pista debajo|los dispositivos de|los elementos de|los qrs de|las isletas,|los exhibidores de|los basureros y|las mangueras de|los extinguidores se|la caseta de|los letreros se|el espacio dedicado|los jardines en|los estacionamientos de|las aceras y|el rotulo|el baño se|la musica en|la tienda se|el uniforme del|el personal de|los elementos del|la terraza y|sin partes faltantes|no descolorido|no despintado|descamado|libres de oxido)/i.test(t)) {
-        return true;
-      }
+      if (txt.includes("?")) return true;
+      // Filtrar textos largos o preguntas del cuestionario
+      const checklistStarts = [
+        "se ve limpia",
+        "se encuentra libre",
+        "se encuentran libres",
+        "se encuentra en buen",
+        "se encuentran en buen",
+        "no puede haber",
+        "puede que haya",
+        "tiene disponible",
+        "cuenta con un",
+        "los elementos de",
+        "la fachada de",
+        "la entrada y",
+        "la rodadura de",
+        "la rodadura y",
+        "la pista debajo",
+        "los dispositivos de",
+        "los qrs de",
+        "las isletas,",
+        "los exhibidores de",
+        "los basureros y",
+        "las mangueras de",
+        "los extinguidores se",
+        "la caseta de",
+        "los letreros se",
+        "el espacio dedicado",
+        "los jardines en",
+        "los estacionamientos de",
+        "las aceras y",
+        "el rotulo",
+        "el bano se",
+        "la musica en",
+        "la tienda se",
+        "el uniforme del",
+        "el personal de",
+        "los elementos del",
+        "la terraza y",
+        "sin partes faltantes",
+        "no descolorido",
+        "no despintado",
+        "descamado",
+        "libres de oxido",
+        "letrero secundario de precios",
+        "arrojado",
+        "arrollado"
+      ];
+      if (checklistStarts.some(p => t.startsWith(p))) return true;
+      if (t.length > 65) return true;
       return false;
     }
 
@@ -614,14 +659,12 @@
         if (pg.pageNum === 1) continue;
         const lines = toLines(pg.items);
 
-        // Detectar encabezados de área en la página
         const areaMarkers = [];
         for (const l of lines) {
           const found = AREAS.find(a => norm(a.key) === norm(l.text));
           if (found) areaMarkers.push({ area: found.key, y: l.y });
         }
 
-        // Detectar todas las líneas "Observaciones - ..."
         const obsLines = [];
         for (let idx = 0; idx < lines.length; idx++) {
           const m = lines[idx].text.match(/^Observaciones\s*[-–]\s*(.+)$/i);
@@ -639,7 +682,6 @@
           const nextObsY = obsLines[idx + 1] ? obsLines[idx + 1].y - 1 : pg.height - 20;
           const prevObsY = idx > 0 ? obsLines[idx - 1].y : Math.max(20, cur.y - 80);
 
-          // Determinar el área real según el marcador más cercano encima del ancla
           let area = null;
           for (let m = areaMarkers.length - 1; m >= 0; m--) {
             if (areaMarkers[m].y <= cur.y + 5) {
@@ -650,16 +692,14 @@
           if (!area) area = areaMarkers[0]?.area || null;
           if (!area) continue;
 
-          // Si hay un marcador de área justo debajo de cur.y y antes de nextObsY, detener ahí
           const nextAreaMarker = areaMarkers.find(m => m.y > cur.y + 2 && m.y < nextObsY);
-          const limitY = nextAreaMarker ? nextAreaMarker.y - 1 : nextObsY;
+          const limitY = nextAreaMarker ? nextAreaMarker.y - 1 : Math.min(nextObsY, cur.y + 26);
 
-          // Contar penalizaciones ("No") en la banda anterior a esta observación
           const evalItems = pg.items.filter(it => it.y > prevObsY + 1 && it.y < cur.y - 1);
           const hasPenalty = evalItems.some(it => /^no$/i.test(it.str.trim()));
           if (hasPenalty) penaltyCount++;
 
-          // Buscar cualquier nota escrita por el auditor en el espacio de esta observación
+          // Buscar estrictamente en el recuadro/banda de observación de esta parte evaluada
           const obsBand = pg.items.filter(
             it => it.y > cur.y + 1.5 && it.y <= limitY
           );
@@ -674,17 +714,16 @@
               .filter(it => !isIgnoredToken(it.str))
               .map(it => it.str);
             const joined = clean(filtered.join(" "));
-            if (!joined || isQuestionPhrase(joined)) continue;
+            if (!joined || isChecklistText(joined)) continue;
 
-            // Evitar nombres de partes en columna izquierda corta si no son comentario
-            if (br.items.every(it => it.x < 100) && joined.length <= 24 && !/\s/.test(joined)) continue;
+            // Ignorar nombres de partes en la columna izquierda
+            if (br.items.every(it => it.x < 100) && joined.length <= 28 && !/\s/.test(joined)) continue;
 
             extracted.push(joined);
           }
 
           const observation = clean(extracted.join(" "));
-          if (observation.length > 0) {
-            // Evitar duplicados exactos en la misma área
+          if (observation.length > 0 && !isChecklistText(observation)) {
             const exists = notesByArea[area].some(
               n => norm(n.part) === norm(cur.part) && norm(n.observation) === norm(observation)
             );
