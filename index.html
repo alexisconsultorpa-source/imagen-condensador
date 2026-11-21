@@ -15,6 +15,9 @@
       --red-dark: #7f1d1d;
       --red-soft: #fef2f2;
       --red-border: #fecaca;
+      --gray: #475569;
+      --gray-soft: #f1f5f9;
+      --gray-border: #cbd5e1;
       --white: #ffffff;
       --line: #cbd5e1;
       --text: #111827;
@@ -227,22 +230,31 @@
       overflow-wrap: break-word;
     }
 
-    tbody tr.under-100 td {
+    tbody tr.below-expected td {
       background: var(--red-soft);
+    }
+
+    tbody tr.not-applicable td {
+      background: var(--gray-soft);
     }
 
     .area-col {
       font-weight: 700;
     }
 
-    .pct-bad {
+    .pts-bad, .pct-bad {
       color: var(--red);
       font-weight: 800;
     }
 
-    .pct-ok {
+    .pts-ok, .pct-ok {
       color: var(--green);
       font-weight: 800;
+    }
+
+    .pts-na, .pct-na {
+      color: var(--gray);
+      font-weight: 700;
     }
 
     .tag-aplica {
@@ -260,9 +272,9 @@
       display: inline-block;
       padding: 2px 7px;
       border-radius: 4px;
-      background: var(--red-soft);
-      color: var(--red);
-      border: 1px solid var(--red-border);
+      background: var(--gray-soft);
+      color: var(--gray);
+      border: 1px solid var(--gray-border);
       font-weight: 800;
       font-size: 10px;
     }
@@ -366,7 +378,7 @@
           <div class="k">% Alcanzado</div>
           <div class="v" id="valPct">—</div>
         </div>
-        <div class="info-card">
+        <div class="info-card good" id="scoreCard">
           <div class="k">Puntaje</div>
           <div class="v" id="valScore">—</div>
         </div>
@@ -491,6 +503,8 @@
       let client = "—";
       let totalScore = "—";
       let totalPct = "—";
+      let totalEarned = null;
+      let totalExpected = null;
 
       const mPeriod = p1Text.match(/\b(Ene|Feb|Mar|Abr|May|Jun|Jul|Ago|Sep|Oct|Nov|Dic)[\s\-–]*(?:Ene|Feb|Mar|Abr|May|Jun|Jul|Ago|Sep|Oct|Nov|Dic)?\s*20\d{2}\b/i);
       if (mPeriod) period = mPeriod[0];
@@ -515,7 +529,11 @@
         if (/Total\s+Auditoria/i.test(line.text)) {
           const f = win.match(/(\d+)\s*\/\s*(\d+)/);
           const p = win.match(/\b(\d{1,3}\.\d{2})\b/);
-          if (f) totalScore = `${f[1]}/${f[2]}`;
+          if (f) {
+            totalEarned = parseInt(f[1], 10);
+            totalExpected = parseInt(f[2], 10);
+            totalScore = `${totalEarned}/${totalExpected}`;
+          }
           if (p) totalPct = `${p[1]}%`;
           continue;
         }
@@ -559,7 +577,17 @@
         }
       }
 
-      return { station, period, client, totalScore, totalPct, scores, noAplicaAreas };
+      return {
+        station,
+        period,
+        client,
+        totalScore,
+        totalPct,
+        totalEarned,
+        totalExpected,
+        scores,
+        noAplicaAreas
+      };
     }
 
     function render(data, fileName) {
@@ -571,12 +599,20 @@
       document.getElementById("valClient").textContent = `Encargado: ${data.client}`;
       document.getElementById("valDate").textContent = new Date().toLocaleDateString("es-PA");
 
+      const scoreBelowExpected =
+        data.totalEarned !== null &&
+        data.totalExpected !== null &&
+        data.totalEarned < data.totalExpected;
+
+      const scoreCard = document.getElementById("scoreCard");
       const pctCard = document.getElementById("pctCard");
-      const globalPctNum = parseFloat((data.totalPct || "").replace("%", ""));
+      scoreCard.classList.remove("good", "alert");
       pctCard.classList.remove("good", "alert");
-      if (!Number.isNaN(globalPctNum) && globalPctNum < 100) {
+      if (scoreBelowExpected) {
+        scoreCard.classList.add("alert");
         pctCard.classList.add("alert");
       } else {
+        scoreCard.classList.add("good");
         pctCard.classList.add("good");
       }
 
@@ -590,22 +626,26 @@
       for (const a of AREAS) {
         const sc = data.scores[a.key];
         const applies = sc.total > 0 && !data.noAplicaAreas.has(a.key);
+        const belowExpected = applies && sc.earned < sc.total;
 
         const tr = document.createElement("tr");
+        if (!applies) {
+          tr.className = "not-applicable";
+        } else if (belowExpected) {
+          tr.className = "below-expected";
+        }
+
         const pctStr = applies ? `${sc.pct.toFixed(2)}%` : "0.00%";
-        const pctNum = applies ? sc.pct : 0;
-        const isUnder100 = pctNum < 100;
+        const ptsClass = !applies ? "pts-na" : (belowExpected ? "pts-bad" : "pts-ok");
+        const pctClass = !applies ? "pct-na" : (belowExpected ? "pct-bad" : "pct-ok");
 
-        if (isUnder100) tr.className = "under-100";
-
-        const pctClass = isUnder100 ? "pct-bad" : "pct-ok";
         const statusBadge = applies
           ? `<span class="tag-aplica">Aplica</span>`
           : `<span class="tag-no-aplica">No aplica</span>`;
 
         tr.innerHTML = `
           <td class="area-col">${esc(a.key)}</td>
-          <td class="center">${sc.earned}/${sc.total}</td>
+          <td class="center ${ptsClass}">${sc.earned}/${sc.total}</td>
           <td class="center ${pctClass}">${pctStr}</td>
           <td>${esc(a.part)}</td>
           <td class="center">${statusBadge}</td>
