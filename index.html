@@ -32,13 +32,13 @@
       background: var(--white);
       color: var(--text);
       font-size: 12px;
-      line-height: 1.3;
+      line-height: 1.28;
     }
 
     .toolbar {
       max-width: 980px;
-      margin: 14px auto 10px;
-      padding: 0 12px;
+      margin: 12px auto 8px;
+      padding: 0 10px;
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -47,14 +47,14 @@
     }
 
     .toolbar-title {
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 800;
       color: var(--green-dark);
     }
 
     .actions {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
     }
 
@@ -63,9 +63,9 @@
       border: 1px solid var(--green);
       background: var(--green);
       color: var(--white);
-      padding: 6px 12px;
+      padding: 6px 11px;
       border-radius: 5px;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 700;
       cursor: pointer;
     }
@@ -88,8 +88,8 @@
 
     .dropzone {
       max-width: 980px;
-      margin: 0 auto 10px;
-      padding: 0 12px;
+      margin: 0 auto 8px;
+      padding: 0 10px;
     }
 
     .drop-box {
@@ -97,31 +97,32 @@
       background: var(--green-soft);
       color: var(--green-dark);
       border-radius: 6px;
-      padding: 10px;
+      padding: 9px;
       text-align: center;
-      font-size: 12px;
+      font-size: 11.5px;
       cursor: pointer;
     }
 
     .status {
       max-width: 980px;
-      margin: 0 auto 8px;
-      padding: 0 12px;
+      margin: 0 auto 6px;
+      padding: 0 10px;
       font-size: 11px;
       color: var(--muted);
     }
 
     .page-container {
       max-width: 980px;
-      margin: 0 auto 24px;
-      padding: 0 12px;
+      margin: 0 auto 20px;
+      padding: 0 10px;
     }
 
     .report-page {
       background: var(--white);
       border: 2px solid var(--green);
       border-radius: 6px;
-      padding: 14px 18px;
+      padding: 12px 14px;
+      overflow: hidden;
     }
 
     .header-bar {
@@ -130,35 +131,38 @@
       align-items: center;
       background: var(--green);
       color: var(--white);
-      padding: 8px 12px;
+      padding: 7px 10px;
       border-radius: 4px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
+      gap: 8px;
     }
 
     .header-bar h2 {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 800;
       letter-spacing: 0.02em;
       text-transform: uppercase;
     }
 
     .header-bar span {
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 600;
+      white-space: nowrap;
     }
 
     .info-strip {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 6px;
-      margin-bottom: 10px;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 5px;
+      margin-bottom: 8px;
     }
 
     .info-card {
       border: 1px solid var(--line);
       border-radius: 4px;
-      padding: 6px 8px;
+      padding: 5px 6px;
       background: var(--white);
+      min-width: 0;
     }
 
     .info-card.alert {
@@ -172,56 +176,64 @@
     }
 
     .info-card .k {
-      font-size: 9px;
+      font-size: 8.5px;
       font-weight: 700;
       text-transform: uppercase;
       color: var(--muted);
     }
 
     .info-card .v {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 800;
       margin-top: 1px;
+      word-break: break-word;
     }
 
     .info-card.alert .v { color: var(--red); }
     .info-card.good .v { color: var(--green); }
 
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+    }
+
     table {
       width: 100%;
+      table-layout: fixed;
       border-collapse: collapse;
-      font-size: 11px;
+      font-size: 10.5px;
     }
 
     thead th {
       background: var(--green);
       color: var(--white);
       border: 1px solid var(--green-dark);
-      padding: 5px 7px;
+      padding: 4px 5px;
       text-align: left;
-      font-size: 10px;
+      font-size: 9px;
       text-transform: uppercase;
+      word-wrap: break-word;
     }
 
     thead th.center, tbody td.center {
       text-align: center;
-      white-space: nowrap;
     }
 
     tbody td {
       border: 1px solid var(--line);
-      padding: 4px 7px;
+      padding: 3.5px 5px;
       vertical-align: top;
       background: var(--white);
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
 
-    tbody tr.has-penalty td {
+    tbody tr.has-finding td {
       background: var(--red-soft);
     }
 
     .area-col {
       font-weight: 700;
-      white-space: nowrap;
     }
 
     .pct-bad {
@@ -234,33 +246,54 @@
       font-weight: 800;
     }
 
-    .obs-item {
-      min-height: 14px;
+    .no-inc {
+      color: var(--green-dark);
+      font-weight: 600;
+    }
+
+    .obs-line {
       margin-bottom: 2px;
     }
 
-    .obs-item:last-child {
+    .obs-line:last-child {
       margin-bottom: 0;
     }
 
     .page-foot {
-      margin-top: 8px;
-      padding-top: 5px;
+      margin-top: 7px;
+      padding-top: 4px;
       border-top: 1px solid var(--green);
       display: flex;
       justify-content: space-between;
-      font-size: 10px;
+      font-size: 9.5px;
       color: var(--muted);
+      gap: 8px;
+    }
+
+    @media (max-width: 600px) {
+      .info-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      table {
+        font-size: 9.5px;
+      }
+      thead th {
+        font-size: 8px;
+        padding: 3.5px 3px;
+      }
+      tbody td {
+        padding: 3px 3px;
+      }
     }
 
     @media print {
       @page {
         size: letter portrait;
-        margin: 6mm;
+        margin: 5mm;
       }
 
       body {
-        font-size: 9.5px;
+        font-size: 9px;
       }
 
       .toolbar, .dropzone, .status {
@@ -275,61 +308,63 @@
 
       .report-page {
         border: 1.5px solid var(--green);
-        padding: 8px 10px;
+        padding: 6px 8px;
+        overflow: visible;
       }
 
       .header-bar {
-        padding: 5px 8px;
-        margin-bottom: 6px;
+        padding: 4px 7px;
+        margin-bottom: 5px;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
 
       .header-bar h2 {
-        font-size: 12px;
+        font-size: 11px;
       }
 
       .info-strip {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 4px;
-        margin-bottom: 6px;
+        margin-bottom: 5px;
       }
 
       .info-card {
-        padding: 4px 6px;
+        padding: 3px 5px;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
 
       .info-card .v {
-        font-size: 11px;
+        font-size: 10px;
       }
 
       thead th {
-        padding: 3px 5px;
-        font-size: 8.5px;
+        padding: 2.5px 4px;
+        font-size: 8px;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
 
       tbody td {
-        padding: 2.5px 5px;
-        font-size: 9px;
-        line-height: 1.2;
+        padding: 2px 4px;
+        font-size: 8.5px;
+        line-height: 1.15;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
 
       .page-foot {
-        margin-top: 5px;
+        margin-top: 4px;
         padding-top: 3px;
-        font-size: 8px;
+        font-size: 7.5px;
       }
     }
   </style>
 </head>
 <body>
   <div class="toolbar">
-    <div class="toolbar-title">Lector de Auditoría de Imagen (1 Página · Verde / Rojo / Blanco)</div>
+    <div class="toolbar-title">Lector de Auditoría de Imagen · 1 Página</div>
     <div class="actions">
       <label class="upload-label" for="pdfFile">Subir PDF Original</label>
       <input type="file" id="pdfFile" accept="application/pdf" style="display:none" />
@@ -376,22 +411,24 @@
         </div>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th style="width: 19%">Área</th>
-            <th class="center" style="width: 9%">Puntaje</th>
-            <th class="center" style="width: 10%">% Alcanzado</th>
-            <th style="width: 24%">Parte Evaluada</th>
-            <th style="width: 38%">Observaciones</th>
-          </tr>
-        </thead>
-        <tbody id="reportBody">
-          <tr>
-            <td colspan="5" class="center" style="padding: 14px;">Sube el PDF original para generar el informe en una página.</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 19%">Área</th>
+              <th class="center" style="width: 9%">Puntos</th>
+              <th class="center" style="width: 10%">% Alcanzado</th>
+              <th style="width: 25%">Parte Evaluada</th>
+              <th style="width: 37%">Observaciones</th>
+            </tr>
+          </thead>
+          <tbody id="reportBody">
+            <tr>
+              <td colspan="5" class="center" style="padding: 14px;">Sube el PDF original para generar el informe en una página.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <div class="page-foot">
         <span id="valClient">Encargado: —</span>
@@ -405,16 +442,16 @@
       "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
     const AREAS = [
-      "Acercamiento Inicial",
-      "MID",
-      "Canopy",
-      "Pista",
-      "Área de Surtidores",
-      "Letreros y Alrededor Externo",
-      "Baños",
-      "Tienda",
-      "Uniformes",
-      "Otras Áreas Comunes"
+      { key: "Acercamiento Inicial", defaultPart: "Fachada General" },
+      { key: "MID", defaultPart: "MID / Letrero Secundario de Precios" },
+      { key: "Canopy", defaultPart: "Columnas Canopy" },
+      { key: "Pista", defaultPart: "Accesos / Rodadura, Rejillas / Pista Debajo de Canopy" },
+      { key: "Área de Surtidores", defaultPart: "Surtidores / Islas / Servicios" },
+      { key: "Letreros y Alrededor Externo", defaultPart: "Letreros / Jardines / Estacionamientos / Aceras" },
+      { key: "Baños", defaultPart: "Exterior / Infraestructura / Accesorios / Control" },
+      { key: "Tienda", defaultPart: "Fachada / Infraestructura / Exhibición / Ambiente" },
+      { key: "Uniformes", defaultPart: "Personal de Pista y Tienda" },
+      { key: "Otras Áreas Comunes", defaultPart: "Lubricentro / Car Wash / Terraza" }
     ];
 
     const pdfInput = document.getElementById("pdfFile");
@@ -452,7 +489,6 @@
       if (!t) return true;
       if (t.includes("?")) return true;
       if (/^observaciones\s*[-–]/i.test(t)) return true;
-      // Excluir valores o encabezados de Limpieza, Funcionamiento, Estado, Puntaje, %
       if (/^(sí|si|no|no aplica|limpieza|funcionamiento|estado|puntaje|%|total)$/i.test(t)) return true;
       if (/^\d+\s*\/\s*\d+$/.test(t) || /^\d{1,3}\.\d{2}$/.test(t) || /^\d{1,2}$/.test(t)) return true;
       return false;
@@ -521,7 +557,7 @@
       }
 
       const scores = {};
-      for (const a of AREAS) scores[a] = { earned: 0, total: 0, pct: 0 };
+      for (const a of AREAS) scores[a.key] = { earned: 0, total: 0, pct: 0 };
 
       for (let i = 0; i < p1Lines.length; i++) {
         const line = p1Lines[i];
@@ -534,11 +570,11 @@
           continue;
         }
         for (const a of AREAS) {
-          if (norm(line.text) === norm(a) || norm(line.text).startsWith(norm(a) + " ")) {
+          if (norm(line.text) === norm(a.key) || norm(line.text).startsWith(norm(a.key) + " ")) {
             const f = win.match(/(\d+)\s*\/\s*(\d+)/);
             const p = win.match(/\b(\d{1,3}\.\d{2})\b/);
             if (f) {
-              scores[a] = {
+              scores[a.key] = {
                 earned: parseInt(f[1], 10),
                 total: parseInt(f[2], 10),
                 pct: p ? parseFloat(p[1]) : 0
@@ -548,8 +584,10 @@
         }
       }
 
-      const rowsByArea = {};
-      for (const a of AREAS) rowsByArea[a] = [];
+      const notesByArea = {};
+      for (const a of AREAS) notesByArea[a.key] = [];
+
+      let penaltyCount = 0;
 
       for (const pg of pages) {
         if (pg.pageNum === 1) continue;
@@ -557,8 +595,8 @@
 
         const areaMarkers = [];
         for (const l of lines) {
-          const found = AREAS.find(a => norm(a) === norm(l.text));
-          if (found) areaMarkers.push({ area: found, y: l.y });
+          const found = AREAS.find(a => norm(a.key) === norm(l.text));
+          if (found) areaMarkers.push({ area: found.key, y: l.y });
         }
 
         const obsLines = [];
@@ -588,11 +626,10 @@
           if (!area) area = areaMarkers[0]?.area || null;
           if (!area) continue;
 
-          // Verificar si hubo "No" en la evaluación de esta parte
           const evalItems = pg.items.filter(it => it.y > prevY + 1 && it.y < cur.y - 1);
           const hasPenalty = evalItems.some(it => /^no$/i.test(it.str.trim()));
+          if (hasPenalty) penaltyCount++;
 
-          // Extraer solo el texto escrito en la celda de observación (debajo de "Observaciones - ...")
           const obsBand = pg.items.filter(
             it => it.y > cur.y + 1.5 && it.y <= Math.min(nextY, cur.y + 32)
           );
@@ -600,7 +637,7 @@
 
           const extracted = [];
           for (const br of bandRows) {
-            if (AREAS.some(a => norm(a) === norm(br.text))) break;
+            if (AREAS.some(a => norm(a.key) === norm(br.text))) break;
             if (/^observaciones\s*[-–]/i.test(br.text)) break;
 
             const filtered = br.items
@@ -609,10 +646,8 @@
             const joined = clean(filtered.join(" "));
             if (!joined || isIgnoredTokenOrLine(joined)) continue;
 
-            // Ignorar nombres cortos de la siguiente parte evaluada en la columna izquierda
             if (br.items.every(it => it.x < 105) && joined.length <= 32) continue;
 
-            // Ignorar frases largas del cuestionario
             if (/^(la |las |el |los |se ve |se encuentra |se encuentran |no puede |puede que |tiene disponible|cuenta con )/i.test(joined) && joined.length > 42) {
               continue;
             }
@@ -621,18 +656,17 @@
           }
 
           const observation = clean(extracted.join(" "));
-
-          if (hasPenalty || observation.length > 0) {
-            rowsByArea[area].push({
+          if (observation.length > 0) {
+            notesByArea[area].push({
               part: cur.part,
-              penalty: hasPenalty,
-              observation // Queda en blanco "" si no hay observación escrita
+              observation,
+              penalty: hasPenalty
             });
           }
         }
       }
 
-      return { station, period, client, totalScore, totalPct, scores, rowsByArea };
+      return { station, period, client, totalScore, totalPct, penaltyCount, scores, notesByArea };
     }
 
     function render(data, fileName) {
@@ -641,57 +675,50 @@
       document.getElementById("valPeriod").textContent = data.period;
       document.getElementById("valPct").textContent = data.totalPct;
       document.getElementById("valScore").textContent = data.totalScore;
+      document.getElementById("valPenalties").textContent = String(data.penaltyCount);
       document.getElementById("valClient").textContent = `Encargado: ${data.client}`;
       document.getElementById("valDate").textContent = new Date().toLocaleDateString("es-PA");
-
-      let penaltyCount = 0;
-      for (const a of AREAS) {
-        for (const item of data.rowsByArea[a] || []) {
-          if (item.penalty) penaltyCount++;
-        }
-      }
-      document.getElementById("valPenalties").textContent = String(penaltyCount);
 
       reportBody.innerHTML = "";
       const summaryLines = [
         `*INFORME CONDENSADO — ${data.station.toUpperCase()}*`,
-        `Período: ${data.period} | Puntaje: ${data.totalScore} (${data.totalPct}) | Penalizaciones: ${penaltyCount}`,
+        `Período: ${data.period} | Puntaje: ${data.totalScore} (${data.totalPct}) | Penalizaciones: ${data.penaltyCount}`,
         ""
       ];
 
-      let addedRows = 0;
-
       for (const a of AREAS) {
-        const sc = data.scores[a];
-        const items = data.rowsByArea[a] || [];
-        if (items.length === 0) continue;
+        const sc = data.scores[a.key];
+        const comments = data.notesByArea[a.key] || [];
+        const hasComment = comments.length > 0;
+        const rowHasPen = comments.some(c => c.penalty) || (sc.total > 0 && sc.earned < sc.total);
 
-        addedRows++;
-        const rowHasPen = items.some(x => x.penalty);
         const tr = document.createElement("tr");
-        if (rowHasPen) tr.className = "has-penalty";
+        if (rowHasPen) tr.className = "has-finding";
 
-        const pctClass = sc.total > 0 && sc.pct < 100 ? "pct-bad" : "pct-ok";
         const pctStr = sc.total > 0 ? `${sc.pct.toFixed(2)}%` : "0.00%";
+        const pctClass = sc.total > 0 && sc.pct < 100 ? "pct-bad" : "pct-ok";
+
+        const partHtml = hasComment
+          ? comments.map(c => `<div class="obs-line">${esc(c.part)}</div>`).join("")
+          : `<div class="obs-line">${esc(a.defaultPart)}</div>`;
+
+        const obsHtml = hasComment
+          ? comments.map(c => `<div class="obs-line">${esc(c.observation)}</div>`).join("")
+          : `<div class="obs-line no-inc">Sin incidencias</div>`;
 
         tr.innerHTML = `
-          <td class="area-col">${esc(a)}</td>
+          <td class="area-col">${esc(a.key)}</td>
           <td class="center">${sc.earned}/${sc.total}</td>
           <td class="center ${pctClass}">${pctStr}</td>
-          <td>${items.map(x => `<div class="obs-item">${esc(x.part)}</div>`).join("")}</td>
-          <td>${items.map(x => `<div class="obs-item">${x.observation ? esc(x.observation) : ""}</div>`).join("")}</td>
+          <td>${partHtml}</td>
+          <td>${obsHtml}</td>
         `;
         reportBody.appendChild(tr);
 
-        const detail = items
-          .map(x => `${x.part}${x.observation ? ": " + x.observation : ""}`)
-          .join(" | ");
-        summaryLines.push(`• *${a}* (${sc.earned}/${sc.total} · ${pctStr}): ${detail}`);
-      }
-
-      if (addedRows === 0) {
-        reportBody.innerHTML = `<tr><td colspan="5" class="center" style="padding:12px;">Sin observaciones ni penalizaciones registradas.</td></tr>`;
-        summaryLines.push("Sin observaciones ni penalizaciones registradas.");
+        const waPart = hasComment
+          ? comments.map(c => `${c.part}: ${c.observation}`).join(" | ")
+          : "Sin incidencias";
+        summaryLines.push(`• *${a.key}* (${sc.earned}/${sc.total} · ${pctStr}): ${waPart}`);
       }
 
       plainSummary = summaryLines.join("\n");
