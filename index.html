@@ -12,7 +12,6 @@
       --green-soft: #f0fdf4;
       --green-border: #bbf7d0;
       --red: #b91c1c;
-      --red-dark: #7f1d1d;
       --red-soft: #fef2f2;
       --red-border: #fecaca;
       --gray: #475569;
@@ -35,7 +34,7 @@
       background: var(--white);
       color: var(--text);
       font-size: 12px;
-      line-height: 1.28;
+      line-height: 1.3;
     }
 
     .toolbar {
@@ -124,7 +123,7 @@
       background: var(--white);
       border: 2px solid var(--green);
       border-radius: 6px;
-      padding: 11px 13px;
+      padding: 12px 14px;
       overflow: hidden;
     }
 
@@ -134,14 +133,14 @@
       align-items: center;
       background: var(--green);
       color: var(--white);
-      padding: 6px 10px;
+      padding: 7px 10px;
       border-radius: 4px;
-      margin-bottom: 7px;
+      margin-bottom: 8px;
       gap: 8px;
     }
 
     .header-bar h2 {
-      font-size: 12.5px;
+      font-size: 13px;
       font-weight: 800;
       letter-spacing: 0.02em;
       text-transform: uppercase;
@@ -157,13 +156,13 @@
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 6px;
-      margin-bottom: 7px;
+      margin-bottom: 8px;
     }
 
     .info-card {
       border: 1px solid var(--line);
       border-radius: 4px;
-      padding: 4.5px 7px;
+      padding: 5px 7px;
       background: var(--white);
       min-width: 0;
     }
@@ -176,7 +175,7 @@
     }
 
     .info-card .v {
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 800;
       margin-top: 1px;
       color: var(--text);
@@ -191,16 +190,16 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 10.5px;
+      font-size: 11px;
     }
 
     thead th {
       background: var(--green);
       color: var(--white);
       border: 1px solid var(--green-dark);
-      padding: 4px 6px;
+      padding: 5px 7px;
       text-align: left;
-      font-size: 9px;
+      font-size: 9.5px;
       text-transform: uppercase;
     }
 
@@ -211,7 +210,7 @@
 
     tbody td {
       border: 1px solid var(--line);
-      padding: 3.5px 6px;
+      padding: 4.5px 7px;
       vertical-align: middle;
       background: var(--white);
       word-wrap: break-word;
@@ -247,74 +246,33 @@
 
     .tag-aplica {
       display: inline-block;
-      padding: 1.5px 6px;
+      padding: 2px 7px;
       border-radius: 4px;
       background: var(--green-soft);
       color: var(--green);
       border: 1px solid var(--green-border);
       font-weight: 800;
-      font-size: 9.5px;
+      font-size: 10px;
     }
 
     .tag-no-aplica {
       display: inline-block;
-      padding: 1.5px 6px;
+      padding: 2px 7px;
       border-radius: 4px;
       background: var(--gray-soft);
       color: var(--gray);
       border: 1px solid var(--gray-border);
       font-weight: 800;
-      font-size: 9.5px;
-    }
-
-    .obs-summary {
-      margin-top: 8px;
-      border: 1px solid var(--line);
-      border-radius: 4px;
-      background: var(--white);
-      padding: 6px 9px;
-    }
-
-    .obs-summary-title {
-      font-size: 9.5px;
-      font-weight: 800;
-      text-transform: uppercase;
-      color: var(--green-dark);
-      margin-bottom: 4px;
-    }
-
-    .obs-list {
-      list-style: none;
       font-size: 10px;
-      color: var(--text);
-    }
-
-    .obs-list li {
-      padding: 1.5px 0;
-      border-bottom: 1px dashed #e2e8f0;
-    }
-
-    .obs-list li:last-child {
-      border-bottom: none;
-    }
-
-    .obs-area {
-      font-weight: 700;
-      color: var(--red);
-    }
-
-    .obs-empty {
-      font-size: 10px;
-      color: var(--muted);
     }
 
     .page-foot {
-      margin-top: 7px;
-      padding-top: 4px;
+      margin-top: 8px;
+      padding-top: 5px;
       border-top: 1px solid var(--green);
       display: flex;
       justify-content: space-between;
-      font-size: 9px;
+      font-size: 9.5px;
       color: var(--muted);
       gap: 8px;
     }
@@ -324,25 +282,25 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
       table {
-        font-size: 9.5px;
+        font-size: 10px;
       }
       thead th {
-        font-size: 8px;
-        padding: 3.5px 4px;
+        font-size: 8.5px;
+        padding: 4px 5px;
       }
       tbody td {
-        padding: 3px 4px;
+        padding: 4px 5px;
       }
     }
 
     @media print {
       @page {
         size: letter portrait;
-        margin: 5mm;
+        margin: 6mm;
       }
 
       body {
-        font-size: 8.5px;
+        font-size: 9.5px;
       }
 
       .toolbar, .dropzone, .status {
@@ -357,56 +315,11 @@
 
       .report-page {
         border: 1.5px solid var(--green);
-        padding: 6px 8px;
+        padding: 8px 10px;
         overflow: visible;
       }
 
-      .header-bar {
-        padding: 4px 7px;
-        margin-bottom: 5px;
-      }
-
-      .info-strip {
-        gap: 4px;
-        margin-bottom: 5px;
-      }
-
-      .info-card {
-        padding: 3px 5px;
-      }
-
-      .info-card .v {
-        font-size: 10px;
-      }
-
-      thead th {
-        padding: 2.5px 4px;
-        font-size: 7.5px;
-      }
-
-      tbody td {
-        padding: 2px 4px;
-        font-size: 8px;
-        line-height: 1.12;
-      }
-
-      .obs-summary {
-        margin-top: 5px;
-        padding: 4px 6px;
-      }
-
-      .obs-list, .obs-empty {
-        font-size: 8px;
-        line-height: 1.15;
-      }
-
-      .page-foot {
-        margin-top: 4px;
-        padding-top: 3px;
-        font-size: 7.5px;
-      }
-
-      .header-bar, .info-card, thead th, tbody td, .tag-aplica, .tag-no-aplica, .obs-area {
+      .header-bar, .info-card, thead th, tbody td, .tag-aplica, .tag-no-aplica {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
@@ -477,11 +390,6 @@
         </table>
       </div>
 
-      <div class="obs-summary">
-        <div class="obs-summary-title">Resumen de Observaciones</div>
-        <div id="obsContent" class="obs-empty">Sube un PDF para ver las observaciones registradas.</div>
-      </div>
-
       <div class="page-foot">
         <span id="valClient">Encargado: —</span>
         <span id="valDate"></span>
@@ -510,7 +418,6 @@
     const dropBox = document.getElementById("dropBox");
     const statusBar = document.getElementById("statusBar");
     const reportBody = document.getElementById("reportBody");
-    const obsContent = document.getElementById("obsContent");
     const btnCopy = document.getElementById("btnCopy");
     const btnPrint = document.getElementById("btnPrint");
 
@@ -535,16 +442,6 @@
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
-    }
-
-    function isIgnoredToken(txt) {
-      const t = clean(txt);
-      if (!t) return true;
-      if (t.includes("?")) return true;
-      if (/^observaciones\s*[-–]/i.test(t)) return true;
-      if (/^(sí|si|no|no aplica|limpieza|funcionamiento|estado|puntaje|%|total)$/i.test(t)) return true;
-      if (/^\d+\s*\/\s*\d+$/.test(t) || /^\d{1,3}(\.\d{1,2})?%?$/.test(t) || /^\d{1,2}$/.test(t)) return true;
-      return false;
     }
 
     async function readPdf(buffer) {
@@ -637,7 +534,6 @@
       }
 
       const noAplicaAreas = new Set();
-      const observations = [];
 
       for (const pg of pages) {
         if (pg.pageNum === 1) continue;
@@ -660,65 +556,9 @@
             if (currentArea) noAplicaAreas.add(currentArea);
           }
         }
-
-        const obsLines = [];
-        for (let idx = 0; idx < lines.length; idx++) {
-          const m = lines[idx].text.match(/^Observaciones\s*[-–]\s*(.+)$/i);
-          if (m) {
-            obsLines.push({
-              part: clean(m[1]),
-              y: lines[idx].y
-            });
-          }
-        }
-
-        for (let idx = 0; idx < obsLines.length; idx++) {
-          const cur = obsLines[idx];
-          const nextObsY = obsLines[idx + 1] ? obsLines[idx + 1].y - 1 : pg.height - 20;
-
-          let area = null;
-          for (let m = areaMarkers.length - 1; m >= 0; m--) {
-            if (areaMarkers[m].y <= cur.y + 5) {
-              area = areaMarkers[m].area;
-              break;
-            }
-          }
-          if (!area) area = areaMarkers[0]?.area || null;
-          if (!area) continue;
-
-          const nextAreaMarker = areaMarkers.find(m => m.y > cur.y + 2 && m.y < nextObsY);
-          const limitY = nextAreaMarker ? nextAreaMarker.y - 1 : nextObsY;
-
-          const obsBand = pg.items.filter(it => it.y > cur.y + 1.5 && it.y <= limitY);
-          const bandRows = toLines(obsBand);
-
-          const extracted = [];
-          for (const br of bandRows) {
-            if (AREAS.some(a => norm(a.key) === norm(br.text))) break;
-            if (/^observaciones\s*[-–]/i.test(br.text)) break;
-
-            const filtered = br.items
-              .filter(it => !isIgnoredToken(it.str))
-              .map(it => it.str);
-            const joined = clean(filtered.join(" "));
-            if (!joined || joined.includes("?")) continue;
-
-            extracted.push(joined);
-          }
-
-          const note = clean(extracted.join(" "));
-          if (note.length > 0) {
-            const exists = observations.some(
-              o => norm(o.area) === norm(area) && norm(o.part) === norm(cur.part) && norm(o.note) === norm(note)
-            );
-            if (!exists) {
-              observations.push({ area, part: cur.part, note });
-            }
-          }
-        }
       }
 
-      return { station, period, client, totalScore, totalPct, scores, noAplicaAreas, observations };
+      return { station, period, client, totalScore, totalPct, scores, noAplicaAreas };
     }
 
     function render(data, fileName) {
@@ -767,23 +607,6 @@
         reportBody.appendChild(tr);
 
         summaryLines.push(`• *${a.key}* (${sc.earned}/${sc.total} · ${pctStr}) — ${applies ? "Aplica" : "No aplica"}`);
-      }
-
-      if (data.observations.length > 0) {
-        obsContent.className = "";
-        obsContent.innerHTML = `<ul class="obs-list">${
-          data.observations
-            .map(o => `<li><span class="obs-area">${esc(o.area)}</span> (${esc(o.part)}): ${esc(o.note)}</li>`)
-            .join("")
-        }</ul>`;
-
-        summaryLines.push("", "*Observaciones:*");
-        for (const o of data.observations) {
-          summaryLines.push(`- ${o.area} (${o.part}): ${o.note}`);
-        }
-      } else {
-        obsContent.className = "obs-empty";
-        obsContent.textContent = "Sin observaciones registradas en el PDF.";
       }
 
       plainSummary = summaryLines.join("\n");
