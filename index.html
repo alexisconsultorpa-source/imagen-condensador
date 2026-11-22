@@ -3,24 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Informe Condensado de Auditoría de Imagen</title>
+  <title>Analizador de Auditorías de Imagen — Puma Energy</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     :root {
-      --green: #15803d;
-      --green-dark: #14532d;
-      --green-soft: #f0fdf4;
-      --green-border: #bbf7d0;
-      --red: #b91c1c;
-      --red-soft: #fef2f2;
-      --red-border: #fecaca;
-      --gray: #475569;
-      --gray-soft: #f1f5f9;
-      --gray-border: #cbd5e1;
-      --white: #ffffff;
-      --line: #cbd5e1;
-      --text: #111827;
-      --muted: #4b5563;
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-2: #0b1220;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #ef4444;
+      --accent-2: #22c55e;
+      --warn: #f59e0b;
     }
 
     * {
@@ -30,631 +25,670 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: var(--white);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
       color: var(--text);
-      font-size: 12px;
-      line-height: 1.3;
+      line-height: 1.5;
+      padding: 24px;
     }
 
-    .toolbar {
-      max-width: 960px;
-      margin: 12px auto 8px;
-      padding: 0 10px;
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
       justify-content: space-between;
       align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
     }
 
-    .toolbar-title {
-      font-size: 13.5px;
-      font-weight: 800;
-      color: var(--green-dark);
-    }
-
-    .actions {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    button, .upload-label {
-      appearance: none;
-      border: 1px solid var(--green);
-      background: var(--green);
-      color: var(--white);
-      padding: 6px 11px;
-      border-radius: 5px;
-      font-size: 11.5px;
+    header h1 {
+      font-size: 1.4rem;
       font-weight: 700;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .upload-box {
+      background: var(--panel);
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      text-align: center;
+      margin-bottom: 24px;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .upload-box.dragover {
+      border-color: var(--accent);
+      background: rgba(239, 68, 68, 0.08);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 0.95rem;
+      font-weight: 600;
       cursor: pointer;
     }
 
-    button.btn-red {
-      background: var(--red);
-      border-color: var(--red);
+    .btn:hover {
+      opacity: 0.92;
     }
 
-    button.btn-white {
-      background: var(--white);
-      color: var(--green-dark);
-      border-color: var(--green);
+    .btn-secondary {
+      background: #334155;
+      color: var(--text);
     }
 
-    button:disabled {
-      opacity: 0.45;
+    .btn:disabled {
+      opacity: 0.5;
       cursor: not-allowed;
     }
 
-    .dropzone {
-      max-width: 960px;
-      margin: 0 auto 8px;
-      padding: 0 10px;
-    }
-
-    .drop-box {
-      border: 1.5px dashed var(--green);
-      background: var(--green-soft);
-      color: var(--green-dark);
-      border-radius: 6px;
-      padding: 9px;
-      text-align: center;
-      font-size: 11.5px;
-      cursor: pointer;
+    input[type="file"] {
+      display: none;
     }
 
     .status {
-      max-width: 960px;
-      margin: 0 auto 6px;
-      padding: 0 10px;
-      font-size: 11px;
+      margin-top: 12px;
+      font-size: 0.9rem;
       color: var(--muted);
     }
 
-    .page-container {
-      max-width: 960px;
-      margin: 0 auto 20px;
-      padding: 0 10px;
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
     }
 
-    .report-page {
-      background: var(--white);
-      border: 2px solid var(--green);
-      border-radius: 6px;
-      padding: 12px 14px;
-      overflow: hidden;
-    }
-
-    .header-bar {
+    .card-header {
       display: flex;
+      flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      background: var(--green);
-      color: var(--white);
-      padding: 7px 10px;
-      border-radius: 4px;
-      margin-bottom: 8px;
-      gap: 8px;
+      gap: 12px;
+      margin-bottom: 16px;
     }
 
-    .header-bar h2 {
-      font-size: 13px;
-      font-weight: 800;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
+    .card h2 {
+      font-size: 1.1rem;
     }
 
-    .header-bar span {
-      font-size: 10.5px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .info-strip {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 6px;
-      margin-bottom: 8px;
-    }
-
-    .info-card {
-      border: 1px solid var(--line);
-      border-radius: 4px;
-      padding: 5px 7px;
-      background: var(--white);
-      min-width: 0;
-    }
-
-    .info-card .k {
-      font-size: 8.5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    .info-card .v {
-      font-size: 12.5px;
-      font-weight: 800;
-      margin-top: 1px;
-      color: var(--text);
-      word-break: break-word;
-    }
-
-    .table-scroll {
-      width: 100%;
+    .table-wrap {
       overflow-x: auto;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 11px;
+      font-size: 0.9rem;
     }
 
-    thead th {
-      background: var(--green);
-      color: var(--white);
-      border: 1px solid var(--green-dark);
-      padding: 5px 7px;
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
       text-align: left;
-      font-size: 9.5px;
-      text-transform: uppercase;
+      vertical-align: top;
     }
 
-    thead th.center, tbody td.center {
-      text-align: center;
+    th {
+      background: var(--panel-2);
+      color: var(--muted);
+      font-weight: 600;
       white-space: nowrap;
     }
 
-    tbody td {
-      border: 1px solid var(--line);
-      padding: 4.5px 7px;
-      vertical-align: middle;
-      background: var(--white);
-      word-wrap: break-word;
-      overflow-wrap: break-word;
+    .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
     }
 
-    tbody tr.below-expected td {
-      background: var(--red-soft);
+    .center {
+      text-align: center;
     }
 
-    tbody tr.not-applicable td {
-      background: var(--gray-soft);
-    }
-
-    .area-col {
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.8rem;
       font-weight: 700;
     }
 
-    .pts-bad, .pct-bad {
-      color: var(--red);
-      font-weight: 800;
+    .badge-high {
+      background: rgba(34, 197, 94, 0.18);
+      color: #4ade80;
     }
 
-    .pts-ok, .pct-ok {
-      color: var(--green);
-      font-weight: 800;
+    .badge-mid {
+      background: rgba(245, 158, 11, 0.18);
+      color: #fbbf24;
     }
 
-    .pts-na, .pct-na {
-      color: var(--gray);
-      font-weight: 700;
+    .badge-low {
+      background: rgba(239, 68, 68, 0.18);
+      color: #f87171;
     }
 
-    .tag-aplica {
-      display: inline-block;
-      padding: 2px 7px;
-      border-radius: 4px;
-      background: var(--green-soft);
-      color: var(--green);
-      border: 1px solid var(--green-border);
-      font-weight: 800;
-      font-size: 10px;
+    .station-detail {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 14px;
     }
 
-    .tag-no-aplica {
-      display: inline-block;
-      padding: 2px 7px;
-      border-radius: 4px;
-      background: var(--gray-soft);
-      color: var(--gray);
-      border: 1px solid var(--gray-border);
-      font-weight: 800;
-      font-size: 10px;
-    }
-
-    .page-foot {
-      margin-top: 8px;
-      padding-top: 5px;
-      border-top: 1px solid var(--green);
+    .station-detail-top {
       display: flex;
+      flex-wrap: wrap;
       justify-content: space-between;
-      font-size: 9.5px;
-      color: var(--muted);
+      gap: 8px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .obs-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
       gap: 8px;
     }
 
-    @media (max-width: 600px) {
-      .info-strip {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-      table {
-        font-size: 10px;
-      }
-      thead th {
-        font-size: 8.5px;
-        padding: 4px 5px;
-      }
-      tbody td {
-        padding: 4px 5px;
-      }
+    .obs-item {
+      background: var(--panel-2);
+      border-left: 3px solid var(--warn);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.88rem;
     }
 
-    @media print {
-      @page {
-        size: letter portrait;
-        margin: 6mm;
-      }
+    .filter-input {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      min-width: 240px;
+    }
 
-      body {
-        font-size: 9.5px;
-      }
-
-      .toolbar, .dropzone, .status {
-        display: none !important;
-      }
-
-      .page-container {
-        max-width: 100%;
-        margin: 0;
-        padding: 0;
-      }
-
-      .report-page {
-        border: 1.5px solid var(--green);
-        padding: 8px 10px;
-        overflow: visible;
-      }
-
-      .header-bar, .info-card, thead th, tbody td, .tag-aplica, .tag-no-aplica {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
+    .hidden {
+      display: none;
     }
   </style>
 </head>
 <body>
-  <div class="toolbar">
-    <div class="toolbar-title">Lector de Auditoría de Imagen · 1 Página</div>
-    <div class="actions">
-      <label class="upload-label" for="pdfFile">Subir PDF Original</label>
-      <input type="file" id="pdfFile" accept="application/pdf" style="display:none" />
-      <button type="button" class="btn-white" id="btnCopy" disabled>Copiar Resumen</button>
-      <button type="button" class="btn-red" id="btnPrint" disabled>Guardar / Imprimir PDF</button>
-    </div>
-  </div>
-
-  <div class="dropzone">
-    <div class="drop-box" id="dropBox">
-      Arrastra aquí el PDF original de la auditoría o haz clic en <strong>Subir PDF Original</strong>.
-    </div>
-  </div>
-
-  <div class="status" id="statusBar">Listo para cargar un PDF.</div>
-
-  <div class="page-container">
-    <div class="report-page">
-      <div class="header-bar">
-        <h2>Informe Condensado de Auditoría de Imagen</h2>
-        <span id="fileNameLabel">Sin archivo</span>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Analizador de Auditorías de Imagen — Puma Energy</h1>
+        <p>Carga masiva de PDFs condensados, consolidado de áreas, observaciones y ranking de estaciones</p>
       </div>
+      <button id="exportCsvBtn" class="btn btn-secondary" disabled>Exportar Ranking CSV</button>
+    </header>
 
-      <div class="info-strip">
-        <div class="info-card">
-          <div class="k">Estación</div>
-          <div class="v" id="valStation">—</div>
-        </div>
-        <div class="info-card">
-          <div class="k">Período</div>
-          <div class="v" id="valPeriod">—</div>
-        </div>
-        <div class="info-card">
-          <div class="k">% Alcanzado</div>
-          <div class="v" id="valPct">—</div>
-        </div>
-        <div class="info-card">
-          <div class="k">Puntaje</div>
-          <div class="v" id="valScore">—</div>
-        </div>
+    <div id="dropZone" class="upload-box">
+      <p style="margin-bottom: 12px;">
+        Arrastra aquí todos los PDFs condensados del mes o selecciónalos en lote
+      </p>
+      <label for="pdfInput" class="btn">Seleccionar PDFs</label>
+      <input id="pdfInput" type="file" accept="application/pdf,.pdf" multiple />
+      <div id="statusText" class="status">Ningún archivo cargado todavía.</div>
+    </div>
+
+    <!-- 1. Ranking -->
+    <section id="rankingSection" class="card hidden">
+      <div class="card-header">
+        <h2>Ranking de Estaciones</h2>
+        <span id="summaryCount" style="color: var(--muted); font-size: 0.88rem;"></span>
       </div>
-
-      <div class="table-scroll">
+      <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Área</th>
-              <th class="center">Puntos</th>
-              <th class="center">% Alcanzado</th>
-              <th>Parte Evaluada</th>
-              <th class="center">Estado</th>
+              <th class="center">#</th>
+              <th>Estación</th>
+              <th>Período</th>
+              <th>Cliente</th>
+              <th class="center">Puntaje</th>
+              <th class="num">%</th>
+              <th class="center">Áreas c/ Obs.</th>
             </tr>
           </thead>
-          <tbody id="reportBody">
-            <tr>
-              <td colspan="5" class="center" style="padding: 14px;">Sube el PDF original para generar el informe en una página.</td>
-            </tr>
-          </tbody>
+          <tbody id="rankingBody"></tbody>
         </table>
       </div>
+    </section>
 
-      <div class="page-foot">
-        <span id="valClient">Encargado: —</span>
-        <span id="valDate"></span>
+    <!-- 2. Observaciones Consolidadas -->
+    <section id="obsSection" class="card hidden">
+      <div class="card-header">
+        <h2 id="obsTitle">Observaciones Consolidadas</h2>
+        <input id="obsFilter" type="text" class="filter-input" placeholder="Filtrar por estación, área o comentario..." />
       </div>
-    </div>
+      <ul id="obsList" class="obs-list"></ul>
+    </section>
+
+    <!-- 3. Detalle por Estación y Área -->
+    <section id="detailSection" class="card hidden">
+      <div class="card-header">
+        <h2>Detalle por Estación y Categoría</h2>
+      </div>
+      <div id="detailsContainer"></div>
+    </section>
   </div>
 
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-    const AREAS = [
-      { key: "Acercamiento Inicial", part: "Fachada General" },
-      { key: "MID", part: "MID / Letrero Secundario de Precios" },
-      { key: "Canopy", part: "Columnas Canopy" },
-      { key: "Pista", part: "Accesos / Rodadura, Rejillas / Pista Debajo de Canopy" },
-      { key: "Área de Surtidores", part: "Surtidores / Islas / Servicios" },
-      { key: "Letreros y Alrededor Externo", part: "Letreros / Jardines / Estacionamientos / Aceras" },
-      { key: "Baños", part: "Exterior / Infraestructura / Accesorios / Control" },
-      { key: "Tienda", part: "Fachada / Infraestructura / Exhibición / Ambiente" },
-      { key: "Uniformes", part: "Personal de Pista y Tienda" },
-      { key: "Otras Áreas Comunes", part: "Lubricentro / Car Wash / Terraza" }
+    const KNOWN_CATEGORIES = [
+      "Acercamiento Inicial",
+      "MID",
+      "Canopy",
+      "Pista",
+      "Área de Surtidores",
+      "Letreros y Alrededor Externo",
+      "Baños",
+      "Tienda",
+      "Uniformes",
+      "Otras Áreas Comunes"
     ];
 
-    const pdfInput = document.getElementById("pdfFile");
-    const dropBox = document.getElementById("dropBox");
-    const statusBar = document.getElementById("statusBar");
-    const reportBody = document.getElementById("reportBody");
-    const btnCopy = document.getElementById("btnCopy");
-    const btnPrint = document.getElementById("btnPrint");
+    let lastBatchResult = null;
 
-    let plainSummary = "";
+    const dropZone = document.getElementById("dropZone");
+    const pdfInput = document.getElementById("pdfInput");
+    const statusText = document.getElementById("statusText");
+    const exportCsvBtn = document.getElementById("exportCsvBtn");
+    const rankingSection = document.getElementById("rankingSection");
+    const rankingBody = document.getElementById("rankingBody");
+    const summaryCount = document.getElementById("summaryCount");
+    const obsSection = document.getElementById("obsSection");
+    const obsTitle = document.getElementById("obsTitle");
+    const obsList = document.getElementById("obsList");
+    const obsFilter = document.getElementById("obsFilter");
+    const detailSection = document.getElementById("detailSection");
+    const detailsContainer = document.getElementById("detailsContainer");
 
-    function norm(s) {
-      return (s || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .replace(/\s+/g, " ")
-        .trim();
+    function normalizeText(str) {
+      return (str || "").replace(/\s+/g, " ").trim();
     }
 
-    function clean(s) {
-      return (s || "").replace(/\s+/g, " ").trim();
+    function parseFraction(raw) {
+      const m = (raw || "").match(/(\d+)\s*\/\s*(\d+)/);
+      if (!m) return { obtenido: null, maximo: null };
+      return { obtenido: Number(m[1]), maximo: Number(m[2]) };
     }
 
-    function esc(s) {
-      return (s || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    }
-
-    async function readPdf(buffer) {
-      const doc = await pdfjsLib.getDocument({ data: buffer }).promise;
-      const pages = [];
-      for (let i = 1; i <= doc.numPages; i++) {
-        const page = await doc.getPage(i);
-        const vp = page.getViewport({ scale: 1.0 });
-        const tc = await page.getTextContent();
-        const items = tc.items
-          .filter(it => it.str && it.str.trim() !== "")
-          .map(it => ({
-            str: it.str.trim(),
-            x: it.transform[4],
-            y: vp.height - it.transform[5]
-          }));
-        pages.push({ pageNum: i, height: vp.height, items });
-      }
-      return pages;
-    }
-
-    function toLines(items, tol = 4.5) {
-      const sorted = [...items].sort((a, b) => (Math.abs(a.y - b.y) <= tol ? a.x - b.x : a.y - b.y));
+    async function extractTextFromPdf(file) {
+      const buffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
       const lines = [];
-      for (const it of sorted) {
-        let row = lines.find(r => Math.abs(r.y - it.y) <= tol);
-        if (!row) {
-          row = { y: it.y, items: [] };
-          lines.push(row);
+
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const content = await page.getTextContent();
+        const rows = new Map();
+
+        for (const item of content.items) {
+          if (!item.str || !item.str.trim()) continue;
+          const y = Math.round(item.transform[5] / 3) * 3;
+          const x = item.transform[4];
+          if (!rows.has(y)) rows.set(y, []);
+          rows.get(y).push({ x, text: item.str.trim() });
         }
-        row.items.push(it);
+
+        const sortedYs = Array.from(rows.keys()).sort((a, b) => b - a);
+        for (const y of sortedYs) {
+          const row = rows.get(y).sort((a, b) => a.x - b.x);
+          lines.push(row.map((i) => i.text).join(" "));
+        }
       }
-      for (const r of lines) {
-        r.items.sort((a, b) => a.x - b.x);
-        r.text = clean(r.items.map(i => i.str).join(" "));
-      }
-      return lines;
+
+      return normalizeText(lines.join(" "));
     }
 
-    function parseAudit(pages) {
-      const p1Lines = toLines(pages[0]?.items || []);
-      const p1Text = p1Lines.map(l => l.text).join(" | ");
+    async function parseCondensedPdf(file) {
+      const text = await extractTextFromPdf(file);
 
-      let station = "—";
-      let period = "—";
-      let client = "—";
-      let totalScore = "—";
-      let totalPct = "—";
+      const metaMatch = text.match(
+        /Per[ií]odo:\s*([^|]+?)\s*\|\s*Cliente:\s*(.+?)(?=\s+Datos de la Estaci[oó]n|\s+Estaci[oó]n|$)/i
+      );
+      const periodo = metaMatch ? normalizeText(metaMatch[1]) : "Sin período";
+      const cliente = metaMatch ? normalizeText(metaMatch[2]) : "Sin cliente";
 
-      const mPeriod = p1Text.match(/\b(Ene|Feb|Mar|Abr|May|Jun|Jul|Ago|Sep|Oct|Nov|Dic)[\s\-–]*(?:Ene|Feb|Mar|Abr|May|Jun|Jul|Ago|Sep|Oct|Nov|Dic)?\s*20\d{2}\b/i);
-      if (mPeriod) period = mPeriod[0];
+      const stationMatch = text.match(
+        /Datos de la Estaci[oó]n.*?Total Auditor[ií]a\s+(.+?)\s+(?:Nov-Dic|Ene-Feb|Mar-Abr|May-Jun|Jul-Ago|Sep-Oct|\S+\s+\d{4})\s+(.+?)\s+(\d+\s*\/\s*\d+)\s*\((\d+(?:\.\d+)?)%\)/i
+      );
 
-      const mStation = p1Text.match(/visita al sitio para\s+([A-Za-zÁÉÍÓÚáéíóúñÑ0-9\s\-]+?)\./i);
-      if (mStation) station = mStation[1].trim();
+      let estacion = "";
+      let puntajeTotalTexto = "";
+      let obtenidoTotal = 0;
+      let maximoTotal = 0;
+      let porcentajeTotal = 0;
 
-      for (const pg of pages) {
-        const lines = toLines(pg.items);
-        for (const l of lines) {
-          const mc = l.text.match(/Nombre\s+Cliente\s*:\s*(.+)/i);
-          if (mc && mc[1].trim()) client = mc[1].trim();
+      if (stationMatch) {
+        estacion = normalizeText(stationMatch[1]);
+        puntajeTotalTexto = normalizeText(stationMatch[3]);
+        const frac = parseFraction(puntajeTotalTexto);
+        obtenidoTotal = frac.obtenido ?? 0;
+        maximoTotal = frac.maximo ?? 0;
+        porcentajeTotal = Number(stationMatch[4]);
+      } else {
+        const altEst = text.match(/PUMA ENERGY\s+(.+?)\s+Per[ií]odo:/i);
+        estacion = altEst
+          ? normalizeText(altEst[1])
+          : file.name.replace(/^Informe\s+/i, "").replace(/\.pdf$/i, "");
+
+        const altTotal = text.match(/Total Auditor[ií]a\s+(\d+\s*\/\s*\d+)\s+(\d+(?:\.\d+)?)/i);
+        if (altTotal) {
+          puntajeTotalTexto = normalizeText(altTotal[1]);
+          const frac = parseFraction(puntajeTotalTexto);
+          obtenidoTotal = frac.obtenido ?? 0;
+          maximoTotal = frac.maximo ?? 0;
+          porcentajeTotal = Number(altTotal[2]);
         }
       }
 
-      const scores = {};
-      for (const a of AREAS) scores[a.key] = { earned: 0, total: 0, pct: 0 };
+      const startIdx = text.search(/Resumen por Categor[ií]a/i);
+      const endIdx = text.search(/Page \d+ of \d+/i);
+      const section = text.slice(startIdx !== -1 ? startIdx : 0, endIdx !== -1 ? endIdx : text.length);
 
-      for (let i = 0; i < p1Lines.length; i++) {
-        const line = p1Lines[i];
-        const win = [line.text, p1Lines[i + 1]?.text || "", p1Lines[i + 2]?.text || ""].join(" ");
-        if (/Total\s+Auditoria/i.test(line.text)) {
-          const f = win.match(/(\d+)\s*\/\s*(\d+)/);
-          const p = win.match(/\b(\d{1,3}\.\d{2})\b/);
-          if (f) totalScore = `${f[1]}/${f[2]}`;
-          if (p) totalPct = `${p[1]}%`;
-          continue;
-        }
-        for (const a of AREAS) {
-          if (norm(line.text) === norm(a.key) || norm(line.text).startsWith(norm(a.key) + " ")) {
-            const f = win.match(/(\d+)\s*\/\s*(\d+)/);
-            const p = win.match(/\b(\d{1,3}\.\d{2})\b/);
-            if (f) {
-              scores[a.key] = {
-                earned: parseInt(f[1], 10),
-                total: parseInt(f[2], 10),
-                pct: p ? parseFloat(p[1]) : 0
-              };
-            }
-          }
+      const positions = [];
+      for (const cat of KNOWN_CATEGORIES) {
+        const regex = new RegExp(
+          cat.replace(/\s+/g, "\\s+").replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          "i"
+        );
+        const match = regex.exec(section);
+        if (match && typeof match.index === "number") {
+          positions.push({ categoria: cat, index: match.index });
         }
       }
+      positions.sort((a, b) => a.index - b.index);
 
-      const noAplicaAreas = new Set();
+      const totalPosMatch = section.match(/Total Auditor[ií]a/i);
+      const totalPos = totalPosMatch ? totalPosMatch.index : section.length;
 
-      for (const pg of pages) {
-        if (pg.pageNum === 1) continue;
-        const lines = toLines(pg.items);
-        const areaMarkers = [];
-        for (const l of lines) {
-          const found = AREAS.find(a => norm(a.key) === norm(l.text));
-          if (found) areaMarkers.push({ area: found.key, y: l.y });
+      const categorias = positions.map((pos, idx) => {
+        const nextPos = idx + 1 < positions.length ? positions[idx + 1].index : totalPos;
+        const slice = normalizeText(section.slice(pos.index, nextPos));
+        const catPrefix = new RegExp("^" + pos.categoria.replace(/\s+/g, "\\s+") + "\\s*", "i");
+        const rest = slice.replace(catPrefix, "").trim();
+
+        const scoreAndPct = rest.match(/^(\d+\s*\/\s*\d+)\s+(\d+(?:\.\d+)?)\s*(.*)$/);
+        const onlyPct = rest.match(/^(\d+(?:\.\d+)?)\s*(.*)$/);
+
+        let puntaje = "—";
+        let porcentaje = 0;
+        let comentarios = "";
+
+        if (scoreAndPct) {
+          puntaje = normalizeText(scoreAndPct[1]);
+          porcentaje = Number(scoreAndPct[2]);
+          comentarios = normalizeText(scoreAndPct[3]);
+        } else if (onlyPct) {
+          puntaje = "0/0";
+          porcentaje = Number(onlyPct[1]);
+          comentarios = normalizeText(onlyPct[2]);
+        } else {
+          comentarios = rest;
         }
 
-        for (const l of lines) {
-          if (/no\s+aplica/i.test(l.text)) {
-            let currentArea = null;
-            for (let m = areaMarkers.length - 1; m >= 0; m--) {
-              if (areaMarkers[m].y <= l.y + 5) {
-                currentArea = areaMarkers[m].area;
-                break;
-              }
-            }
-            if (currentArea) noAplicaAreas.add(currentArea);
-          }
-        }
-      }
+        comentarios = comentarios
+          .replace(new RegExp(`${estacion}\\s*-\\s*${periodo}.*$`, "i"), "")
+          .trim();
 
-      return { station, period, client, totalScore, totalPct, scores, noAplicaAreas };
+        return {
+          categoria: pos.categoria,
+          puntaje,
+          porcentaje,
+          comentarios
+        };
+      });
+
+      const totalObservaciones = categorias.filter((c) => c.comentarios.length > 0).length;
+
+      return {
+        archivo: file.name,
+        estacion,
+        periodo,
+        cliente,
+        puntajeTotalTexto,
+        obtenidoTotal,
+        maximoTotal,
+        porcentajeTotal,
+        totalObservaciones,
+        categorias
+      };
     }
 
-    function render(data, fileName) {
-      document.getElementById("fileNameLabel").textContent = fileName || "Reporte";
-      document.getElementById("valStation").textContent = data.station;
-      document.getElementById("valPeriod").textContent = data.period;
-      document.getElementById("valPct").textContent = data.totalPct;
-      document.getElementById("valScore").textContent = data.totalScore;
-      document.getElementById("valClient").textContent = `Encargado: ${data.client}`;
-      document.getElementById("valDate").textContent = new Date().toLocaleDateString("es-PA");
-
-      reportBody.innerHTML = "";
-      const summaryLines = [
-        `*INFORME CONDENSADO — ${data.station.toUpperCase()}*`,
-        `Período: ${data.period} | Puntaje: ${data.totalScore} (${data.totalPct})`,
-        ""
-      ];
-
-      for (const a of AREAS) {
-        const sc = data.scores[a.key];
-        const applies = sc.total > 0 && !data.noAplicaAreas.has(a.key);
-        const belowExpected = applies && sc.earned < sc.total;
-
-        const tr = document.createElement("tr");
-        if (!applies) {
-          tr.className = "not-applicable";
-        } else if (belowExpected) {
-          tr.className = "below-expected";
-        }
-
-        const pctStr = applies ? `${sc.pct.toFixed(2)}%` : "0.00%";
-        const ptsClass = !applies ? "pts-na" : (belowExpected ? "pts-bad" : "pts-ok");
-        const pctClass = !applies ? "pct-na" : (belowExpected ? "pct-bad" : "pct-ok");
-
-        const statusBadge = applies
-          ? `<span class="tag-aplica">Aplica</span>`
-          : `<span class="tag-no-aplica">No aplica</span>`;
-
-        tr.innerHTML = `
-          <td class="area-col">${esc(a.key)}</td>
-          <td class="center ${ptsClass}">${sc.earned}/${sc.total}</td>
-          <td class="center ${pctClass}">${pctStr}</td>
-          <td>${esc(a.part)}</td>
-          <td class="center">${statusBadge}</td>
-        `;
-        reportBody.appendChild(tr);
-
-        summaryLines.push(`• *${a.key}* (${sc.earned}/${sc.total} · ${pctStr}) — ${applies ? "Aplica" : "No aplica"}`);
-      }
-
-      plainSummary = summaryLines.join("\n");
-      btnCopy.disabled = false;
-      btnPrint.disabled = false;
+    function getBadgeClass(pct) {
+      if (pct >= 98) return "badge-high";
+      if (pct >= 90) return "badge-mid";
+      return "badge-low";
     }
 
-    async function processFile(file) {
-      if (!file || file.type !== "application/pdf") {
-        statusBar.textContent = "Selecciona un archivo PDF válido.";
+    function renderObservations(observations, filterText = "") {
+      const q = filterText.trim().toLowerCase();
+      const filtered = q
+        ? observations.filter(
+            (o) =>
+              o.estacion.toLowerCase().includes(q) ||
+              o.categoria.toLowerCase().includes(q) ||
+              o.comentario.toLowerCase().includes(q)
+          )
+        : observations;
+
+      obsTitle.textContent = `Observaciones Consolidadas (${filtered.length})`;
+      if (filtered.length === 0) {
+        obsList.innerHTML = `<li style="color: var(--muted);">No hay observaciones que coincidan con el filtro.</li>`;
         return;
       }
-      statusBar.textContent = `Leyendo "${file.name}"...`;
-      try {
-        const buf = await file.arrayBuffer();
-        const pages = await readPdf(buf);
-        const parsed = parseAudit(pages);
-        render(parsed, file.name);
-        statusBar.textContent = `Generado en 1 página para "${parsed.station}".`;
-      } catch (e) {
-        console.error(e);
-        statusBar.textContent = "No se pudo procesar el PDF.";
-      }
+
+      obsList.innerHTML = filtered
+        .map(
+          (o) => `
+          <li class="obs-item">
+            <strong>${o.estacion}</strong> · <span>${o.categoria}</span> (${o.periodo}): ${o.comentario}
+          </li>`
+        )
+        .join("");
     }
 
-    pdfInput.addEventListener("change", e => {
-      if (e.target.files?.[0]) processFile(e.target.files[0]);
-    });
+    function renderResults(data) {
+      lastBatchResult = data;
+      exportCsvBtn.disabled = data.ranking.length === 0;
 
-    dropBox.addEventListener("click", () => pdfInput.click());
-    dropBox.addEventListener("dragover", e => { e.preventDefault(); });
-    dropBox.addEventListener("drop", e => {
-      e.preventDefault();
-      if (e.dataTransfer.files?.[0]) processFile(e.dataTransfer.files[0]);
-    });
+      rankingSection.classList.remove("hidden");
+      obsSection.classList.remove("hidden");
+      detailSection.classList.remove("hidden");
 
-    btnCopy.addEventListener("click", async () => {
-      if (!plainSummary) return;
-      try {
-        await navigator.clipboard.writeText(plainSummary);
-        btnCopy.textContent = "¡Copiado!";
-        setTimeout(() => (btnCopy.textContent = "Copiar Resumen"), 1500);
-      } catch {
-        statusBar.textContent = "No se pudo copiar al portapapeles.";
+      summaryCount.textContent = `${data.ranking.length} estación(es) procesada(s)`;
+
+      rankingBody.innerHTML = data.ranking
+        .map(
+          (r, i) => `
+          <tr>
+            <td class="center"><strong>#${i + 1}</strong></td>
+            <td><strong>${r.estacion}</strong></td>
+            <td>${r.periodo}</td>
+            <td>${r.cliente}</td>
+            <td class="center">${r.puntajeTotalTexto}</td>
+            <td class="num"><span class="badge ${getBadgeClass(r.porcentajeTotal)}">${r.porcentajeTotal.toFixed(2)}%</span></td>
+            <td class="center">${r.totalObservaciones}</td>
+          </tr>`
+        )
+        .join("");
+
+      obsFilter.value = "";
+      renderObservations(data.observaciones, "");
+
+      detailsContainer.innerHTML = data.ranking
+        .map(
+          (r) => `
+          <div class="station-detail">
+            <div class="station-detail-top">
+              <div>
+                <strong>${r.estacion}</strong> — <span style="color: var(--muted);">${r.periodo} | Cliente: ${r.cliente}</span>
+              </div>
+              <div>
+                Total: <strong>${r.puntajeTotalTexto} (${r.porcentajeTotal.toFixed(2)}%)</strong>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Categoría</th>
+                    <th class="center">Puntaje</th>
+                    <th class="num">%</th>
+                    <th>Comentarios</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${r.categorias
+                    .map(
+                      (c) => `
+                      <tr>
+                        <td>${c.categoria}</td>
+                        <td class="center">${c.puntaje}</td>
+                        <td class="num">${c.porcentaje.toFixed(2)}%</td>
+                        <td>${c.comentarios || "<span style='color: var(--muted);'>—</span>"}</td>
+                      </tr>`
+                    )
+                    .join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>`
+        )
+        .join("");
+    }
+
+    async function handleFiles(fileList) {
+      const files = Array.from(fileList || []).filter(
+        (f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf")
+      );
+      if (files.length === 0) return;
+
+      statusText.textContent = `Procesando ${files.length} archivo(s) PDF...`;
+
+      const auditorias = [];
+      for (const file of files) {
+        const parsed = await parseCondensedPdf(file);
+        auditorias.push(parsed);
       }
+
+      const ranking = [...auditorias].sort((a, b) => {
+        if (b.porcentajeTotal !== a.porcentajeTotal) return b.porcentajeTotal - a.porcentajeTotal;
+        if (b.obtenidoTotal !== a.obtenidoTotal) return b.obtenidoTotal - a.obtenidoTotal;
+        return a.totalObservaciones - b.totalObservaciones;
+      });
+
+      const observaciones = [];
+      for (const r of ranking) {
+        for (const c of r.categorias) {
+          if (c.comentarios) {
+            observaciones.push({
+              estacion: r.estacion,
+              periodo: r.periodo,
+              categoria: c.categoria,
+              comentario: c.comentarios
+            });
+          }
+        }
+      }
+
+      renderResults({ auditorias, ranking, observaciones });
+      statusText.textContent = `Listo: ${auditorias.length} reporte(s) unificado(s).`;
+    }
+
+    function exportCsv() {
+      if (!lastBatchResult || lastBatchResult.ranking.length === 0) return;
+
+      const rows = [
+        ["Posicion", "Estacion", "Periodo", "Cliente", "Puntaje_Total", "Porcentaje", "Areas_Con_Observaciones", "Detalle_Observaciones"]
+      ];
+
+      lastBatchResult.ranking.forEach((r, idx) => {
+        const obsTexto = r.categorias
+          .filter((c) => c.comentarios)
+          .map((c) => `${c.categoria}: ${c.comentarios}`)
+          .join(" | ");
+
+        rows.push([
+          idx + 1,
+          r.estacion,
+          r.periodo,
+          r.cliente,
+          r.puntajeTotalTexto,
+          r.porcentajeTotal.toFixed(2),
+          r.totalObservaciones,
+          obsTexto
+        ]);
+      });
+
+      const csvContent = rows
+        .map((row) =>
+          row
+            .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
+            .join(",")
+        )
+        .join("\n");
+
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "ranking_auditorias_puma_energy.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    pdfInput.addEventListener("change", (e) => handleFiles(e.target.files));
+
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
     });
 
-    btnPrint.addEventListener("click", () => window.print());
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("dragover");
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      handleFiles(e.dataTransfer.files);
+    });
+
+    obsFilter.addEventListener("input", (e) => {
+      if (!lastBatchResult) return;
+      renderObservations(lastBatchResult.observaciones, e.target.value);
+    });
+
+    exportCsvBtn.addEventListener("click", exportCsv);
   </script>
 </body>
 </html>
