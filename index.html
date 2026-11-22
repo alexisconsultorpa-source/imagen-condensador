@@ -5,17 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Analizador de Auditorías de Imagen — Puma Energy</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #1e293b;
-      --panel-2: #0b1220;
-      --border: #334155;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --accent: #ef4444;
-      --accent-2: #22c55e;
-      --warn: #f59e0b;
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --border: #e2e8f0;
+      --text: #111827;
+      --muted: #4b5563;
+      --red: #dc2626;
+      --red-dark: #991b1b;
+      --red-soft: #fef2f2;
+      --green: #16a34a;
+      --green-dark: #166534;
+      --green-soft: #f0fdf4;
     }
 
     * {
@@ -45,12 +51,36 @@
       gap: 16px;
       margin-bottom: 24px;
       padding-bottom: 16px;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 3px solid var(--red);
+    }
+
+    .brand-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .dot-red {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--red);
+      display: inline-block;
+    }
+
+    .dot-green {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--green);
+      display: inline-block;
     }
 
     header h1 {
       font-size: 1.4rem;
-      font-weight: 700;
+      font-weight: 800;
+      color: var(--text);
     }
 
     header p {
@@ -58,65 +88,95 @@
       font-size: 0.9rem;
     }
 
-    .upload-box {
-      background: var(--panel);
-      border: 2px dashed var(--border);
-      border-radius: 12px;
-      padding: 28px;
-      text-align: center;
-      margin-bottom: 24px;
-      transition: border-color 0.2s ease, background 0.2s ease;
-    }
-
-    .upload-box.dragover {
-      border-color: var(--accent);
-      background: rgba(239, 68, 68, 0.08);
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     .btn {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: var(--accent);
-      color: #fff;
       border: none;
       border-radius: 8px;
-      padding: 10px 18px;
-      font-size: 0.95rem;
-      font-weight: 600;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      font-weight: 700;
       cursor: pointer;
+      transition: opacity 0.15s ease, transform 0.1s ease;
     }
 
-    .btn:hover {
+    .btn:hover:not(:disabled) {
       opacity: 0.92;
-    }
-
-    .btn-secondary {
-      background: #334155;
-      color: var(--text);
+      transform: translateY(-1px);
     }
 
     .btn:disabled {
-      opacity: 0.5;
+      opacity: 0.45;
       cursor: not-allowed;
+    }
+
+    .btn-red {
+      background: var(--red);
+      color: #ffffff;
+    }
+
+    .btn-green {
+      background: var(--green);
+      color: #ffffff;
+    }
+
+    .btn-outline-red {
+      background: #ffffff;
+      color: var(--red);
+      border: 2px solid var(--red);
+    }
+
+    .btn-outline-green {
+      background: #ffffff;
+      color: var(--green);
+      border: 2px solid var(--green);
     }
 
     input[type="file"] {
       display: none;
     }
 
+    .upload-box {
+      background: var(--surface);
+      border: 2px dashed var(--green);
+      border-radius: 12px;
+      padding: 28px;
+      text-align: center;
+      margin-bottom: 24px;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .upload-box.dragover {
+      border-color: var(--red);
+      background: var(--red-soft);
+    }
+
     .status {
       margin-top: 12px;
       font-size: 0.9rem;
       color: var(--muted);
+      font-weight: 500;
     }
 
     .card {
-      background: var(--panel);
+      background: var(--surface);
       border: 1px solid var(--border);
+      border-top: 4px solid var(--green);
       border-radius: 12px;
       padding: 20px;
       margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .card.card-alert {
+      border-top-color: var(--red);
     }
 
     .card-header {
@@ -130,6 +190,8 @@
 
     .card h2 {
       font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text);
     }
 
     .table-wrap {
@@ -140,6 +202,7 @@
       width: 100%;
       border-collapse: collapse;
       font-size: 0.9rem;
+      background: #ffffff;
     }
 
     th, td {
@@ -150,10 +213,11 @@
     }
 
     th {
-      background: var(--panel-2);
-      color: var(--muted);
-      font-weight: 600;
+      background: var(--surface-alt);
+      color: var(--text);
+      font-weight: 700;
       white-space: nowrap;
+      border-bottom: 2px solid var(--green);
     }
 
     .num {
@@ -167,30 +231,28 @@
 
     .badge {
       display: inline-block;
-      padding: 2px 8px;
+      padding: 3px 9px;
       border-radius: 999px;
       font-size: 0.8rem;
-      font-weight: 700;
+      font-weight: 800;
     }
 
-    .badge-high {
-      background: rgba(34, 197, 94, 0.18);
-      color: #4ade80;
+    .badge-ok {
+      background: var(--green-soft);
+      color: var(--green-dark);
+      border: 1px solid var(--green);
     }
 
-    .badge-mid {
-      background: rgba(245, 158, 11, 0.18);
-      color: #fbbf24;
-    }
-
-    .badge-low {
-      background: rgba(239, 68, 68, 0.18);
-      color: #f87171;
+    .badge-warn {
+      background: var(--red-soft);
+      color: var(--red-dark);
+      border: 1px solid var(--red);
     }
 
     .station-detail {
-      background: var(--panel-2);
+      background: #ffffff;
       border: 1px solid var(--border);
+      border-left: 4px solid var(--green);
       border-radius: 10px;
       padding: 16px;
       margin-bottom: 14px;
@@ -214,21 +276,32 @@
     }
 
     .obs-item {
-      background: var(--panel-2);
-      border-left: 3px solid var(--warn);
+      background: #ffffff;
+      border: 1px solid #fecaca;
+      border-left: 4px solid var(--red);
       padding: 10px 12px;
       border-radius: 6px;
       font-size: 0.88rem;
     }
 
+    .obs-tag {
+      color: var(--red-dark);
+      font-weight: 700;
+    }
+
     .filter-input {
-      background: var(--panel-2);
+      background: #ffffff;
       color: var(--text);
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--border);
       border-radius: 8px;
       padding: 8px 12px;
       font-size: 0.9rem;
-      min-width: 240px;
+      min-width: 250px;
+    }
+
+    .filter-input:focus {
+      outline: none;
+      border-color: var(--green);
     }
 
     .hidden {
@@ -240,17 +313,27 @@
   <div class="container">
     <header>
       <div>
-        <h1>Analizador de Auditorías de Imagen — Puma Energy</h1>
-        <p>Carga masiva de PDFs condensados, consolidado de áreas, observaciones y ranking de estaciones</p>
+        <div class="brand-bar">
+          <span class="dot-red"></span>
+          <span class="dot-green"></span>
+          <span style="font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em;">
+            Puma Energy · Auditoría de Imagen
+          </span>
+        </div>
+        <h1>Analizador de Auditorías de Imagen</h1>
+        <p>Carga masiva de PDFs condensados, ranking de estaciones, observaciones y exportación Excel / PDF</p>
       </div>
-      <button id="exportCsvBtn" class="btn btn-secondary" disabled>Exportar Ranking CSV</button>
+      <div class="actions">
+        <button id="exportExcelBtn" class="btn btn-green" disabled>Exportar Excel (.xlsx)</button>
+        <button id="exportPdfBtn" class="btn btn-red" disabled>Exportar PDF</button>
+      </div>
     </header>
 
     <div id="dropZone" class="upload-box">
-      <p style="margin-bottom: 12px;">
+      <p style="margin-bottom: 12px; font-weight: 600;">
         Arrastra aquí todos los PDFs condensados del mes o selecciónalos en lote
       </p>
-      <label for="pdfInput" class="btn">Seleccionar PDFs</label>
+      <label for="pdfInput" class="btn btn-red">Seleccionar PDFs</label>
       <input id="pdfInput" type="file" accept="application/pdf,.pdf" multiple />
       <div id="statusText" class="status">Ningún archivo cargado todavía.</div>
     </div>
@@ -259,7 +342,7 @@
     <section id="rankingSection" class="card hidden">
       <div class="card-header">
         <h2>Ranking de Estaciones</h2>
-        <span id="summaryCount" style="color: var(--muted); font-size: 0.88rem;"></span>
+        <span id="summaryCount" style="color: var(--muted); font-size: 0.88rem; font-weight: 600;"></span>
       </div>
       <div class="table-wrap">
         <table>
@@ -280,7 +363,7 @@
     </section>
 
     <!-- 2. Observaciones Consolidadas -->
-    <section id="obsSection" class="card hidden">
+    <section id="obsSection" class="card card-alert hidden">
       <div class="card-header">
         <h2 id="obsTitle">Observaciones Consolidadas</h2>
         <input id="obsFilter" type="text" class="filter-input" placeholder="Filtrar por estación, área o comentario..." />
@@ -319,7 +402,8 @@
     const dropZone = document.getElementById("dropZone");
     const pdfInput = document.getElementById("pdfInput");
     const statusText = document.getElementById("statusText");
-    const exportCsvBtn = document.getElementById("exportCsvBtn");
+    const exportExcelBtn = document.getElementById("exportExcelBtn");
+    const exportPdfBtn = document.getElementById("exportPdfBtn");
     const rankingSection = document.getElementById("rankingSection");
     const rankingBody = document.getElementById("rankingBody");
     const summaryCount = document.getElementById("summaryCount");
@@ -484,9 +568,7 @@
     }
 
     function getBadgeClass(pct) {
-      if (pct >= 98) return "badge-high";
-      if (pct >= 90) return "badge-mid";
-      return "badge-low";
+      return pct === 100 ? "badge-ok" : "badge-warn";
     }
 
     function renderObservations(observations, filterText = "") {
@@ -510,7 +592,7 @@
         .map(
           (o) => `
           <li class="obs-item">
-            <strong>${o.estacion}</strong> · <span>${o.categoria}</span> (${o.periodo}): ${o.comentario}
+            <span class="obs-tag">${o.estacion}</span> · <strong>${o.categoria}</strong> (${o.periodo}): ${o.comentario}
           </li>`
         )
         .join("");
@@ -518,7 +600,9 @@
 
     function renderResults(data) {
       lastBatchResult = data;
-      exportCsvBtn.disabled = data.ranking.length === 0;
+      const hasData = data.ranking.length > 0;
+      exportExcelBtn.disabled = !hasData;
+      exportPdfBtn.disabled = !hasData;
 
       rankingSection.classList.remove("hidden");
       obsSection.classList.remove("hidden");
@@ -624,46 +708,121 @@
       statusText.textContent = `Listo: ${auditorias.length} reporte(s) unificado(s).`;
     }
 
-    function exportCsv() {
+    function exportExcel() {
       if (!lastBatchResult || lastBatchResult.ranking.length === 0) return;
 
-      const rows = [
-        ["Posicion", "Estacion", "Periodo", "Cliente", "Puntaje_Total", "Porcentaje", "Areas_Con_Observaciones", "Detalle_Observaciones"]
-      ];
+      const wb = XLSX.utils.book_new();
 
-      lastBatchResult.ranking.forEach((r, idx) => {
-        const obsTexto = r.categorias
-          .filter((c) => c.comentarios)
-          .map((c) => `${c.categoria}: ${c.comentarios}`)
-          .join(" | ");
+      // Hoja 1: Ranking
+      const rankingRows = lastBatchResult.ranking.map((r, idx) => ({
+        Posicion: idx + 1,
+        Estacion: r.estacion,
+        Periodo: r.periodo,
+        Cliente: r.cliente,
+        Puntaje_Total: r.puntajeTotalTexto,
+        Porcentaje: Number(r.porcentajeTotal.toFixed(2)),
+        Areas_Con_Observaciones: r.totalObservaciones
+      }));
+      const wsRanking = XLSX.utils.json_to_sheet(rankingRows);
+      XLSX.utils.book_append_sheet(wb, wsRanking, "Ranking");
 
-        rows.push([
-          idx + 1,
+      // Hoja 2: Observaciones
+      const obsRows = lastBatchResult.observaciones.map((o) => ({
+        Estacion: o.estacion,
+        Periodo: o.periodo,
+        Categoria: o.categoria,
+        Comentario: o.comentario
+      }));
+      const wsObs = XLSX.utils.json_to_sheet(
+        obsRows.length ? obsRows : [{ Estacion: "", Periodo: "", Categoria: "", Comentario: "Sin observaciones" }]
+      );
+      XLSX.utils.book_append_sheet(wb, wsObs, "Observaciones");
+
+      // Hoja 3: Detalle por Área
+      const detailRows = [];
+      for (const r of lastBatchResult.ranking) {
+        for (const c of r.categorias) {
+          detailRows.push({
+            Estacion: r.estacion,
+            Periodo: r.periodo,
+            Cliente: r.cliente,
+            Categoria: c.categoria,
+            Puntaje: c.puntaje,
+            Porcentaje: Number(c.porcentaje.toFixed(2)),
+            Comentarios: c.comentarios
+          });
+        }
+      }
+      const wsDetail = XLSX.utils.json_to_sheet(detailRows);
+      XLSX.utils.book_append_sheet(wb, wsDetail, "Detalle_Areas");
+
+      XLSX.writeFile(wb, "informe_auditorias_puma_energy.xlsx");
+    }
+
+    function exportPdf() {
+      if (!lastBatchResult || lastBatchResult.ranking.length === 0) return;
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+
+      // Encabezado
+      doc.setFillColor(220, 38, 38);
+      doc.rect(0, 0, 595.28, 8, "F");
+      doc.setFillColor(22, 163, 74);
+      doc.rect(0, 8, 595.28, 4, "F");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(15);
+      doc.setTextColor(17, 24, 39);
+      doc.text("INFORME CONSOLIDADO DE AUDITORÍA DE IMAGEN", 40, 38);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(75, 85, 99);
+      doc.text(`Puma Energy · Total de estaciones evaluadas: ${lastBatchResult.ranking.length}`, 40, 54);
+
+      // Tabla de Ranking
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(17, 24, 39);
+      doc.text("Ranking de Estaciones", 40, 78);
+
+      doc.autoTable({
+        startY: 86,
+        head: [["#", "Estación", "Período", "Cliente", "Puntaje", "%", "Obs."]],
+        body: lastBatchResult.ranking.map((r, idx) => [
+          `#${idx + 1}`,
           r.estacion,
           r.periodo,
           r.cliente,
           r.puntajeTotalTexto,
-          r.porcentajeTotal.toFixed(2),
-          r.totalObservaciones,
-          obsTexto
-        ]);
+          `${r.porcentajeTotal.toFixed(2)}%`,
+          r.totalObservaciones
+        ]),
+        styles: { fontSize: 8.5, cellPadding: 5, textColor: [17, 24, 39] },
+        headStyles: { fillColor: [22, 163, 74], textColor: [255, 255, 255], fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [248, 250, 252] }
       });
 
-      const csvContent = rows
-        .map((row) =>
-          row
-            .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
-            .join(",")
-        )
-        .join("\n");
+      // Tabla de Observaciones
+      const afterRankingY = (doc.lastAutoTable?.finalY || 120) + 24;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(153, 27, 27);
+      doc.text(`Observaciones Consolidadas (${lastBatchResult.observaciones.length})`, 40, afterRankingY);
 
-      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "ranking_auditorias_puma_energy.csv";
-      a.click();
-      URL.revokeObjectURL(url);
+      doc.autoTable({
+        startY: afterRankingY + 8,
+        head: [["Estación", "Categoría", "Comentario"]],
+        body: lastBatchResult.observaciones.length
+          ? lastBatchResult.observaciones.map((o) => [o.estacion, o.categoria, o.comentario])
+          : [["—", "—", "Sin observaciones registradas"]],
+        styles: { fontSize: 8.5, cellPadding: 5, textColor: [17, 24, 39] },
+        headStyles: { fillColor: [220, 38, 38], textColor: [255, 255, 255], fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [254, 242, 242] }
+      });
+
+      doc.save("informe_auditorias_puma_energy.pdf");
     }
 
     pdfInput.addEventListener("change", (e) => handleFiles(e.target.files));
@@ -688,7 +847,8 @@
       renderObservations(lastBatchResult.observaciones, e.target.value);
     });
 
-    exportCsvBtn.addEventListener("click", exportCsv);
+    exportExcelBtn.addEventListener("click", exportExcel);
+    exportPdfBtn.addEventListener("click", exportPdf);
   </script>
 </body>
 </html>
