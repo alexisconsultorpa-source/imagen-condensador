@@ -476,6 +476,21 @@
         .replace(/^\s*0\s*\/\s*0\s*0(?:\.0+)?\s*/gi, "")
         .trim();
 
+      // Eliminar bloques de resumen numérico de sub-áreas sin observación real (ej: "Área de Surtidores 20/20 100.00", "Letreros y Alrededor Externo 6/6 100.00")
+      cleaned = cleaned
+        .replace(/[ÁA]rea\s+de\s+Surtidores\s+\d+\s*\/\s*\d+\s+\d+(?:\.\d+)?(?:\s+Surtidores)?/gi, "")
+        .replace(/Letreros\s+y\s+Alrededor(?:\s+Externo)?\s+\d+\s*\/\s*\d+\s+\d+(?:\.\d+)?(?:\s+Externo)?/gi, "")
+        .replace(/\b\d+\s*\/\s*\d+\s+\d+(?:\.\d+)?\b/g, "")
+        .replace(/\bExterno\b(?=\s*$|\s*[.;:])/gi, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+
+      // Si no hay comillas ni dos puntos de hallazgo (es decir, solo quedó texto de encabezado/resumen sin observación real)
+      const hasObservationContent = /["“”:]/.test(cleaned);
+      if (!hasObservationContent) {
+        return "";
+      }
+
       if (!cleaned) return "";
 
       // Si el comentario es solo un marcador vacío tipo "/ 0.00", "/0.00", "/" o "0.00"
