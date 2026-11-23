@@ -465,6 +465,27 @@
       return (str || "").replace(/\s+/g, " ").trim();
     }
 
+    function sanitizeComment(rawComment, categoria = "") {
+      let cleaned = normalizeText(rawComment);
+      if (!cleaned) return "";
+
+      // Si el comentario es solo un marcador vacío tipo "/ 0.00", "/0.00", "/" o "0.00"
+      const emptySlashOnly = /^\/\s*(?:0(?:\.0+)?)?$/i;
+      if (emptySlashOnly.test(cleaned)) {
+        return "";
+      }
+
+      // En Tienda, si empieza con "/ 0.00" o "/0.00" seguido de nada o solo números/ceros
+      if (categoria.toLowerCase() === "tienda") {
+        cleaned = cleaned.replace(/^\/\s*0(?:\.0+)?\s*/i, "").trim();
+        if (!cleaned || emptySlashOnly.test(cleaned) || /^0(?:\.0+)?$/.test(cleaned)) {
+          return "";
+        }
+      }
+
+      return cleaned;
+    }
+
     function parseFraction(raw) {
       const m = (raw || "").match(/(\d+)\s*\/\s*(\d+)/);
       if (!m) return { obtenido: null, maximo: null };
@@ -600,6 +621,8 @@
         comentarios = comentarios
           .replace(new RegExp(`${estacion}\\s*-\\s*${periodo}.*$`, "i"), "")
           .trim();
+
+        comentarios = sanitizeComment(comentarios, pos.categoria);
 
         return {
           categoria: pos.categoria,
