@@ -127,18 +127,6 @@
       color: #ffffff;
     }
 
-    .btn-outline-red {
-      background: #ffffff;
-      color: var(--red);
-      border: 2px solid var(--red);
-    }
-
-    .btn-outline-green {
-      background: #ffffff;
-      color: var(--green);
-      border: 2px solid var(--green);
-    }
-
     input[type="file"] {
       display: none;
     }
@@ -192,6 +180,19 @@
       font-size: 1.1rem;
       font-weight: 800;
       color: var(--text);
+    }
+
+    .sub-heading {
+      font-size: 0.98rem;
+      font-weight: 800;
+      margin: 18px 0 10px;
+      padding-left: 10px;
+      border-left: 4px solid var(--green);
+      color: var(--text);
+    }
+
+    .sub-heading.red-accent {
+      border-left-color: var(--red);
     }
 
     .table-wrap {
@@ -321,7 +322,7 @@
           </span>
         </div>
         <h1>Analizador de Auditorías de Imagen</h1>
-        <p>Carga masiva de PDFs condensados, ranking de estaciones, observaciones y exportación Excel / PDF</p>
+        <p>Carga masiva de PDFs condensados, ranking por formato, áreas críticas, observaciones y exportación Excel / PDF</p>
       </div>
       <div class="actions">
         <button id="exportExcelBtn" class="btn btn-green" disabled>Exportar Excel (.xlsx)</button>
@@ -338,12 +339,14 @@
       <div id="statusText" class="status">Ningún archivo cargado todavía.</div>
     </div>
 
-    <!-- 1. Ranking -->
+    <!-- 1. Ranking separado por Con Tienda y Sin Tienda -->
     <section id="rankingSection" class="card hidden">
       <div class="card-header">
-        <h2>Ranking de Estaciones</h2>
+        <h2>Ranking de Estaciones (Con Tienda y Sin Tienda)</h2>
         <span id="summaryCount" style="color: var(--muted); font-size: 0.88rem; font-weight: 600;"></span>
       </div>
+
+      <h3 class="sub-heading">Estaciones con Tienda <span id="conTiendaCount" style="color: var(--muted); font-weight: 600;"></span></h3>
       <div class="table-wrap">
         <table>
           <thead>
@@ -357,12 +360,51 @@
               <th class="center">Áreas c/ Obs.</th>
             </tr>
           </thead>
-          <tbody id="rankingBody"></tbody>
+          <tbody id="rankingConTiendaBody"></tbody>
+        </table>
+      </div>
+
+      <h3 class="sub-heading red-accent">Estaciones sin Tienda <span id="sinTiendaCount" style="color: var(--muted); font-weight: 600;"></span></h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="center">#</th>
+              <th>Estación</th>
+              <th>Período</th>
+              <th>Cliente</th>
+              <th class="center">Puntaje</th>
+              <th class="num">%</th>
+              <th class="center">Áreas c/ Obs.</th>
+            </tr>
+          </thead>
+          <tbody id="rankingSinTiendaBody"></tbody>
         </table>
       </div>
     </section>
 
-    <!-- 2. Observaciones Consolidadas -->
+    <!-- 2. Áreas con más observaciones -->
+    <section id="areasSection" class="card card-alert hidden">
+      <div class="card-header">
+        <h2>Áreas con Más Observaciones</h2>
+        <span style="color: var(--muted); font-size: 0.88rem; font-weight: 600;">Ordenado de mayor a menor incidencia</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="center">Prioridad</th>
+              <th>Área / Categoría</th>
+              <th class="center">Observaciones</th>
+              <th class="num">% del Total</th>
+            </tr>
+          </thead>
+          <tbody id="areasBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 3. Observaciones Consolidadas -->
     <section id="obsSection" class="card card-alert hidden">
       <div class="card-header">
         <h2 id="obsTitle">Observaciones Consolidadas</h2>
@@ -371,7 +413,7 @@
       <ul id="obsList" class="obs-list"></ul>
     </section>
 
-    <!-- 3. Detalle por Estación y Área -->
+    <!-- 4. Detalle por Estación y Área -->
     <section id="detailSection" class="card hidden">
       <div class="card-header">
         <h2>Detalle por Estación y Categoría</h2>
@@ -405,7 +447,12 @@
     const exportExcelBtn = document.getElementById("exportExcelBtn");
     const exportPdfBtn = document.getElementById("exportPdfBtn");
     const rankingSection = document.getElementById("rankingSection");
-    const rankingBody = document.getElementById("rankingBody");
+    const rankingConTiendaBody = document.getElementById("rankingConTiendaBody");
+    const rankingSinTiendaBody = document.getElementById("rankingSinTiendaBody");
+    const conTiendaCount = document.getElementById("conTiendaCount");
+    const sinTiendaCount = document.getElementById("sinTiendaCount");
+    const areasSection = document.getElementById("areasSection");
+    const areasBody = document.getElementById("areasBody");
     const summaryCount = document.getElementById("summaryCount");
     const obsSection = document.getElementById("obsSection");
     const obsTitle = document.getElementById("obsTitle");
@@ -422,6 +469,17 @@
       const m = (raw || "").match(/(\d+)\s*\/\s*(\d+)/);
       if (!m) return { obtenido: null, maximo: null };
       return { obtenido: Number(m[1]), maximo: Number(m[2]) };
+    }
+
+    function detectTieneTienda(categorias) {
+      const tiendaCat = categorias.find(
+        (c) => c.categoria.toLowerCase() === "tienda"
+      );
+      if (!tiendaCat) return false;
+      const frac = parseFraction(tiendaCat.puntaje);
+      const tienePuntaje = (frac.maximo !== null && frac.maximo > 0) || (frac.obtenido !== null && frac.obtenido > 0);
+      const tieneCom = Boolean(tiendaCat.comentarios && tiendaCat.comentarios.trim());
+      return tienePuntaje || tieneCom;
     }
 
     async function extractTextFromPdf(file) {
@@ -551,6 +609,7 @@
         };
       });
 
+      const tieneTienda = detectTieneTienda(categorias);
       const totalObservaciones = categorias.filter((c) => c.comentarios.length > 0).length;
 
       return {
@@ -558,6 +617,8 @@
         estacion,
         periodo,
         cliente,
+        tieneTienda,
+        formato: tieneTienda ? "Con Tienda" : "Sin Tienda",
         puntajeTotalTexto,
         obtenidoTotal,
         maximoTotal,
@@ -569,6 +630,47 @@
 
     function getBadgeClass(pct) {
       return pct === 100 ? "badge-ok" : "badge-warn";
+    }
+
+    function buildRankingRowsHtml(list) {
+      if (!list.length) {
+        return `<tr><td colspan="7" class="center" style="color: var(--muted);">Sin estaciones en este grupo.</td></tr>`;
+      }
+      return list
+        .map(
+          (r, i) => `
+          <tr>
+            <td class="center"><strong>#${i + 1}</strong></td>
+            <td><strong>${r.estacion}</strong></td>
+            <td>${r.periodo}</td>
+            <td>${r.cliente}</td>
+            <td class="center">${r.puntajeTotalTexto}</td>
+            <td class="num"><span class="badge ${getBadgeClass(r.porcentajeTotal)}">${r.porcentajeTotal.toFixed(2)}%</span></td>
+            <td class="center">${r.totalObservaciones}</td>
+          </tr>`
+        )
+        .join("");
+    }
+
+    function renderAreasSummary(areasSummary) {
+      const totalObs = areasSummary.reduce((acc, item) => acc + item.cantidad, 0);
+      if (totalObs === 0) {
+        areasBody.innerHTML = `<tr><td colspan="4" class="center" style="color: var(--muted);">No se registraron observaciones en ninguna categoría.</td></tr>`;
+        return;
+      }
+      areasBody.innerHTML = areasSummary
+        .map((a, idx) => {
+          const pct = ((a.cantidad / totalObs) * 100).toFixed(1);
+          const badgeCls = a.cantidad > 0 ? "badge-warn" : "badge-ok";
+          return `
+            <tr>
+              <td class="center"><strong>#${idx + 1}</strong></td>
+              <td><strong>${a.categoria}</strong></td>
+              <td class="center"><span class="badge ${badgeCls}">${a.cantidad}</span></td>
+              <td class="num">${pct}%</td>
+            </tr>`;
+        })
+        .join("");
     }
 
     function renderObservations(observations, filterText = "") {
@@ -592,7 +694,7 @@
         .map(
           (o) => `
           <li class="obs-item">
-            <span class="obs-tag">${o.estacion}</span> · <strong>${o.categoria}</strong> (${o.periodo}): ${o.comentario}
+            <span class="obs-tag">${o.estacion}</span> · <strong>${o.categoria}</strong> (${o.periodo} · ${o.formato}): ${o.comentario}
           </li>`
         )
         .join("");
@@ -605,25 +707,21 @@
       exportPdfBtn.disabled = !hasData;
 
       rankingSection.classList.remove("hidden");
+      areasSection.classList.remove("hidden");
       obsSection.classList.remove("hidden");
       detailSection.classList.remove("hidden");
 
-      summaryCount.textContent = `${data.ranking.length} estación(es) procesada(s)`;
+      const conTienda = data.ranking.filter((r) => r.tieneTienda);
+      const sinTienda = data.ranking.filter((r) => !r.tieneTienda);
 
-      rankingBody.innerHTML = data.ranking
-        .map(
-          (r, i) => `
-          <tr>
-            <td class="center"><strong>#${i + 1}</strong></td>
-            <td><strong>${r.estacion}</strong></td>
-            <td>${r.periodo}</td>
-            <td>${r.cliente}</td>
-            <td class="center">${r.puntajeTotalTexto}</td>
-            <td class="num"><span class="badge ${getBadgeClass(r.porcentajeTotal)}">${r.porcentajeTotal.toFixed(2)}%</span></td>
-            <td class="center">${r.totalObservaciones}</td>
-          </tr>`
-        )
-        .join("");
+      summaryCount.textContent = `${data.ranking.length} estación(es) (${conTienda.length} con tienda · ${sinTienda.length} sin tienda)`;
+      conTiendaCount.textContent = `(${conTienda.length})`;
+      sinTiendaCount.textContent = `(${sinTienda.length})`;
+
+      rankingConTiendaBody.innerHTML = buildRankingRowsHtml(conTienda);
+      rankingSinTiendaBody.innerHTML = buildRankingRowsHtml(sinTienda);
+
+      renderAreasSummary(data.areasSummary);
 
       obsFilter.value = "";
       renderObservations(data.observaciones, "");
@@ -634,7 +732,7 @@
           <div class="station-detail">
             <div class="station-detail-top">
               <div>
-                <strong>${r.estacion}</strong> — <span style="color: var(--muted);">${r.periodo} | Cliente: ${r.cliente}</span>
+                <strong>${r.estacion}</strong> <span class="badge ${r.tieneTienda ? "badge-ok" : "badge-warn"}">${r.formato}</span> — <span style="color: var(--muted);">${r.periodo} | Cliente: ${r.cliente}</span>
               </div>
               <div>
                 Total: <strong>${r.puntajeTotalTexto} (${r.porcentajeTotal.toFixed(2)}%)</strong>
@@ -691,12 +789,20 @@
       });
 
       const observaciones = [];
+      const areaCounts = new Map();
+      for (const cat of KNOWN_CATEGORIES) {
+        areaCounts.set(cat, 0);
+      }
+
       for (const r of ranking) {
         for (const c of r.categorias) {
+          if (!areaCounts.has(c.categoria)) areaCounts.set(c.categoria, 0);
           if (c.comentarios) {
+            areaCounts.set(c.categoria, areaCounts.get(c.categoria) + 1);
             observaciones.push({
               estacion: r.estacion,
               periodo: r.periodo,
+              formato: r.formato,
               categoria: c.categoria,
               comentario: c.comentarios
             });
@@ -704,7 +810,11 @@
         }
       }
 
-      renderResults({ auditorias, ranking, observaciones });
+      const areasSummary = Array.from(areaCounts.entries())
+        .map(([categoria, cantidad]) => ({ categoria, cantidad }))
+        .sort((a, b) => b.cantidad - a.cantidad || a.categoria.localeCompare(b.categoria));
+
+      renderResults({ auditorias, ranking, observaciones, areasSummary });
       statusText.textContent = `Listo: ${auditorias.length} reporte(s) unificado(s).`;
     }
 
@@ -717,6 +827,7 @@
       const rankingRows = lastBatchResult.ranking.map((r, idx) => ({
         Posicion: idx + 1,
         Estacion: r.estacion,
+        Formato: r.formato,
         Periodo: r.periodo,
         Cliente: r.cliente,
         Puntaje_Total: r.puntajeTotalTexto,
@@ -726,24 +837,37 @@
       const wsRanking = XLSX.utils.json_to_sheet(rankingRows);
       XLSX.utils.book_append_sheet(wb, wsRanking, "Ranking");
 
-      // Hoja 2: Observaciones
+      // Hoja 2: Áreas con más observaciones
+      const totalObs = lastBatchResult.observaciones.length || 1;
+      const areasRows = lastBatchResult.areasSummary.map((a, idx) => ({
+        Prioridad: idx + 1,
+        Area_Categoria: a.categoria,
+        Observaciones: a.cantidad,
+        Porcentaje_Total: Number(((a.cantidad / totalObs) * 100).toFixed(1))
+      }));
+      const wsAreas = XLSX.utils.json_to_sheet(areasRows);
+      XLSX.utils.book_append_sheet(wb, wsAreas, "Areas_Observaciones");
+
+      // Hoja 3: Observaciones
       const obsRows = lastBatchResult.observaciones.map((o) => ({
         Estacion: o.estacion,
+        Formato: o.formato,
         Periodo: o.periodo,
         Categoria: o.categoria,
         Comentario: o.comentario
       }));
       const wsObs = XLSX.utils.json_to_sheet(
-        obsRows.length ? obsRows : [{ Estacion: "", Periodo: "", Categoria: "", Comentario: "Sin observaciones" }]
+        obsRows.length ? obsRows : [{ Estacion: "", Formato: "", Periodo: "", Categoria: "", Comentario: "Sin observaciones" }]
       );
       XLSX.utils.book_append_sheet(wb, wsObs, "Observaciones");
 
-      // Hoja 3: Detalle por Área
+      // Hoja 4: Detalle por Área
       const detailRows = [];
       for (const r of lastBatchResult.ranking) {
         for (const c of r.categorias) {
           detailRows.push({
             Estacion: r.estacion,
+            Formato: r.formato,
             Periodo: r.periodo,
             Cliente: r.cliente,
             Categoria: c.categoria,
@@ -765,6 +889,9 @@
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
 
+      const conTienda = lastBatchResult.ranking.filter((r) => r.tieneTienda);
+      const sinTienda = lastBatchResult.ranking.filter((r) => !r.tieneTienda);
+
       // Encabezado
       doc.setFillColor(220, 38, 38);
       doc.rect(0, 0, 595.28, 8, "F");
@@ -779,44 +906,102 @@
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       doc.setTextColor(75, 85, 99);
-      doc.text(`Puma Energy · Total de estaciones evaluadas: ${lastBatchResult.ranking.length}`, 40, 54);
+      doc.text(
+        `Puma Energy · Estaciones: ${lastBatchResult.ranking.length} (Con Tienda: ${conTienda.length} | Sin Tienda: ${sinTienda.length})`,
+        40,
+        54
+      );
 
-      // Tabla de Ranking
+      // 1. Resultados: Estaciones con Tienda
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.setTextColor(17, 24, 39);
-      doc.text("Ranking de Estaciones", 40, 78);
+      doc.setFontSize(11.5);
+      doc.setTextColor(22, 101, 52);
+      doc.text(`Ranking — Estaciones con Tienda (${conTienda.length})`, 40, 76);
 
       doc.autoTable({
-        startY: 86,
+        startY: 84,
         head: [["#", "Estación", "Período", "Cliente", "Puntaje", "%", "Obs."]],
-        body: lastBatchResult.ranking.map((r, idx) => [
-          `#${idx + 1}`,
-          r.estacion,
-          r.periodo,
-          r.cliente,
-          r.puntajeTotalTexto,
-          `${r.porcentajeTotal.toFixed(2)}%`,
-          r.totalObservaciones
-        ]),
-        styles: { fontSize: 8.5, cellPadding: 5, textColor: [17, 24, 39] },
+        body: conTienda.length
+          ? conTienda.map((r, idx) => [
+              `#${idx + 1}`,
+              r.estacion,
+              r.periodo,
+              r.cliente,
+              r.puntajeTotalTexto,
+              `${r.porcentajeTotal.toFixed(2)}%`,
+              r.totalObservaciones
+            ])
+          : [["—", "Sin estaciones con tienda", "—", "—", "—", "—", "—"]],
+        styles: { fontSize: 8.5, cellPadding: 4.5, textColor: [17, 24, 39] },
+        headStyles: { fillColor: [22, 163, 74], textColor: [255, 255, 255], fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [240, 253, 244] }
+      });
+
+      // 2. Resultados: Estaciones sin Tienda
+      const afterConTiendaY = (doc.lastAutoTable?.finalY || 120) + 20;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11.5);
+      doc.setTextColor(17, 24, 39);
+      doc.text(`Ranking — Estaciones sin Tienda (${sinTienda.length})`, 40, afterConTiendaY);
+
+      doc.autoTable({
+        startY: afterConTiendaY + 8,
+        head: [["#", "Estación", "Período", "Cliente", "Puntaje", "%", "Obs."]],
+        body: sinTienda.length
+          ? sinTienda.map((r, idx) => [
+              `#${idx + 1}`,
+              r.estacion,
+              r.periodo,
+              r.cliente,
+              r.puntajeTotalTexto,
+              `${r.porcentajeTotal.toFixed(2)}%`,
+              r.totalObservaciones
+            ])
+          : [["—", "Sin estaciones sin tienda", "—", "—", "—", "—", "—"]],
+        styles: { fontSize: 8.5, cellPadding: 4.5, textColor: [17, 24, 39] },
         headStyles: { fillColor: [22, 163, 74], textColor: [255, 255, 255], fontStyle: "bold" },
         alternateRowStyles: { fillColor: [248, 250, 252] }
       });
 
-      // Tabla de Observaciones
-      const afterRankingY = (doc.lastAutoTable?.finalY || 120) + 24;
+      // 3. Cuadro: Áreas con más observaciones (en sección de resultados, antes del salto)
+      const afterSinTiendaY = (doc.lastAutoTable?.finalY || 180) + 20;
+      const totalObs = lastBatchResult.observaciones.length || 1;
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
+      doc.setFontSize(11.5);
       doc.setTextColor(153, 27, 27);
-      doc.text(`Observaciones Consolidadas (${lastBatchResult.observaciones.length})`, 40, afterRankingY);
+      doc.text("Áreas con Más Observaciones", 40, afterSinTiendaY);
 
       doc.autoTable({
-        startY: afterRankingY + 8,
-        head: [["Estación", "Categoría", "Comentario"]],
+        startY: afterSinTiendaY + 8,
+        head: [["Prioridad", "Área / Categoría", "Observaciones", "% del Total"]],
+        body: lastBatchResult.areasSummary.map((a, idx) => [
+          `#${idx + 1}`,
+          a.categoria,
+          a.cantidad,
+          `${((a.cantidad / totalObs) * 100).toFixed(1)}%`
+        ]),
+        styles: { fontSize: 8.5, cellPadding: 4.5, textColor: [17, 24, 39] },
+        headStyles: { fillColor: [220, 38, 38], textColor: [255, 255, 255], fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [254, 242, 242] }
+      });
+
+      // Salto de página obligatorio: comentarios/observaciones nunca en la misma página que los resultados
+      doc.addPage();
+
+      doc.setFillColor(220, 38, 38);
+      doc.rect(0, 0, 595.28, 6, "F");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(153, 27, 27);
+      doc.text(`Observaciones Consolidadas (${lastBatchResult.observaciones.length})`, 40, 34);
+
+      doc.autoTable({
+        startY: 44,
+        head: [["Estación", "Formato", "Categoría", "Comentario"]],
         body: lastBatchResult.observaciones.length
-          ? lastBatchResult.observaciones.map((o) => [o.estacion, o.categoria, o.comentario])
-          : [["—", "—", "Sin observaciones registradas"]],
+          ? lastBatchResult.observaciones.map((o) => [o.estacion, o.formato, o.categoria, o.comentario])
+          : [["—", "—", "—", "Sin observaciones registradas"]],
         styles: { fontSize: 8.5, cellPadding: 5, textColor: [17, 24, 39] },
         headStyles: { fillColor: [220, 38, 38], textColor: [255, 255, 255], fontStyle: "bold" },
         alternateRowStyles: { fillColor: [254, 242, 242] }
